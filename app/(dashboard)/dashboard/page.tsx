@@ -128,21 +128,21 @@ export default function DashboardPage() {
       const insightsData = insightsRes.data.data || insightsRes.data;
       
       // Transform the data to match the expected structure
-      const transformedInsights = {
-        page_id: insightsData.page_id,
-        page_name: insightsData.page_name,
+      const transformedInsights: PageInsights = {
+        page_id: (insightsData as any).page_id,
+        page_name: (insightsData as any).page_name,
         metrics: {
-          followers_count: insightsData.followers_count || 0,
-          fan_count: insightsData.fan_count || 0,
-          rating: insightsData.overall_star_rating || 0,
-          rating_count: insightsData.rating_count || 0,
+          followers_count: (insightsData as any).followers_count || 0,
+          fan_count: (insightsData as any).fan_count || 0,
+          rating: (insightsData as any).overall_star_rating || 0,
+          rating_count: (insightsData as any).rating_count || 0,
         },
         page_info: {
-          category: insightsData.category || '',
-          link: insightsData.link || '',
-          website: insightsData.website || '',
-          about: insightsData.about || '',
-          phone: insightsData.phone || '',
+          category: (insightsData as any).category || '',
+          link: (insightsData as any).link || '',
+          website: (insightsData as any).website || '',
+          about: (insightsData as any).about || '',
+          phone: (insightsData as any).phone || '',
         }
       };
       
