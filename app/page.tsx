@@ -48,18 +48,18 @@ export default function HomePage() {
             Your all-in-one platform for tracking social media performance across Facebook, Instagram & TikTok
           </p>
           
-          <div className="flex gap-4 justify-center">
+          <div className="flex gap-6 justify-center flex-wrap">
             <Button 
               onClick={handleLogin} 
               size="lg" 
-              className="bg-white text-slate-900 hover:bg-blue-50 text-lg px-10 py-6"
+              className="bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 text-lg px-12 py-7 rounded-xl shadow-2xl hover:shadow-blue-500/50 transform hover:scale-105 transition-all duration-300 font-bold cursor-pointer"
             >
               Get Started Free
             </Button>
             <Button 
               size="lg" 
               variant="outline" 
-              className="border-2 border-white/30 text-white hover:bg-white/10 text-lg px-10 py-6"
+              className="border-2 border-white/40 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 hover:border-white/60 text-lg px-12 py-7 rounded-xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 font-bold cursor-pointer"
             >
               Learn More
             </Button>
