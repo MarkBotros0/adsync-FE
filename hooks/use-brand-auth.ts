@@ -69,7 +69,7 @@ export function useBrandAuth(): UseBrandAuth {
     try {
       const res = await brandAuthAPI.validate(token);
       if (!res.data.valid) {
-        // Server says session is no longer valid (e.g. force-signout by another device)
+        // Server explicitly says session is no longer valid (e.g. force-signout by another device)
         clearSession();
         setState({ brand: null, token: null, isLoading: false, isAuthenticated: false, subscription: null });
         tokenRef.current = null;
@@ -80,11 +80,15 @@ export function useBrandAuth(): UseBrandAuth {
           isAuthenticated: true,
         }));
       }
-    } catch {
-      // On network error or 401, sign out
-      clearSession();
-      setState({ brand: null, token: null, isLoading: false, isAuthenticated: false, subscription: null });
-      tokenRef.current = null;
+    } catch (err: unknown) {
+      // Only sign out on explicit server rejection (401). Network errors / backend down
+      // should not end the session — the user will retry on the next poll.
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 401) {
+        clearSession();
+        setState({ brand: null, token: null, isLoading: false, isAuthenticated: false, subscription: null });
+        tokenRef.current = null;
+      }
     }
   }, []);
 

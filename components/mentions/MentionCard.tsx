@@ -47,9 +47,9 @@ function PlatformBadgeIcon({ platform }: { platform: MentionPlatform }) {
 }
 
 const SENTIMENT_META: Record<Sentiment, { label: string; cls: string }> = {
-  positive: { label: 'Positive', cls: 'bg-green-50 text-green-600 border-green-200' },
-  negative: { label: 'Negative', cls: 'bg-red-50 text-red-600 border-red-200'       },
-  neutral:  { label: 'Neutral',  cls: 'bg-slate-100 text-slate-500 border-slate-200' },
+  positive: { label: 'Positive', cls: 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-700/50' },
+  negative: { label: 'Negative', cls: 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-700/50'             },
+  neutral:  { label: 'Neutral',  cls: 'bg-slate-100 dark:bg-dk-raised text-slate-500 dark:text-purple-400 border-slate-200 dark:border-dk-border'       },
 };
 
 function formatFollowers(n: number): string {
@@ -79,11 +79,11 @@ export function MentionCard({ mention, onDelete }: MentionCardProps) {
   const timeAgo = formatDistanceToNow(new Date(mention.created_at), { addSuffix: true });
 
   return (
-    <div className="border-b border-slate-100 bg-white hover:bg-slate-50/60 transition-colors px-5 py-4">
+    <div className="border-b border-slate-100 dark:border-dk-border bg-white dark:bg-dk-surface hover:bg-slate-50/60 dark:hover:bg-dk-raised/60 transition-colors px-5 py-4">
       <div className="flex items-start gap-3">
         {/* Avatar */}
         <div className="relative shrink-0">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-sm font-semibold text-slate-600">
+          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-dk-raised dark:to-purple-900/60 flex items-center justify-center text-sm font-semibold text-slate-600 dark:text-purple-300">
             {getInitials(mention.author.name)}
           </div>
           <div className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full flex items-center justify-center ${platBg}`}>
@@ -95,18 +95,18 @@ export function MentionCard({ mention, onDelete }: MentionCardProps) {
         <div className="flex-1 min-w-0">
           {/* Author row */}
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="text-sm font-semibold text-slate-900 truncate">{mention.author.name}</span>
+            <span className="text-sm font-semibold text-slate-900 dark:text-purple-100 truncate">{mention.author.name}</span>
             {mention.author.verified && (
               <span className="text-blue-500 text-xs">✓</span>
             )}
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-slate-400 dark:text-purple-500">
               {formatFollowers(mention.author.followers)} followers
             </span>
-            <span className="text-xs text-slate-400 ml-auto">{timeAgo}</span>
+            <span className="text-xs text-slate-400 dark:text-purple-500 ml-auto">{timeAgo}</span>
           </div>
 
           {/* Text */}
-          <p className="text-sm text-slate-700 leading-relaxed line-clamp-3 mb-2">
+          <p className="text-sm text-slate-700 dark:text-purple-200 leading-relaxed line-clamp-3 mb-2">
             {mention.content}
           </p>
 
@@ -129,20 +129,20 @@ export function MentionCard({ mention, onDelete }: MentionCardProps) {
                 <div
                   key={i}
                   className={`h-1.5 w-1.5 rounded-full ${
-                    i < mention.performance ? 'bg-purple-500' : 'bg-slate-200'
+                    i < mention.performance ? 'bg-purple-500' : 'bg-slate-200 dark:bg-dk-raised'
                   }`}
                 />
               ))}
             </div>
 
             {/* Reach */}
-            <span className="text-xs text-slate-500 flex items-center gap-1">
+            <span className="text-xs text-slate-500 dark:text-purple-400 flex items-center gap-1">
               <Eye className="h-3 w-3" />
               {formatFollowers(mention.reach)}
             </span>
 
             {/* Interactions */}
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-slate-500 dark:text-purple-400">
               {mention.interactions} interactions
             </span>
 
@@ -157,7 +157,7 @@ export function MentionCard({ mention, onDelete }: MentionCardProps) {
                 href={mention.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs text-slate-400 hover:text-purple-600 transition-colors"
+                className="flex items-center gap-1 text-xs text-slate-400 dark:text-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-colors"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
                 Visit
@@ -165,7 +165,7 @@ export function MentionCard({ mention, onDelete }: MentionCardProps) {
               {onDelete && (
                 <button
                   onClick={() => onDelete(mention.id)}
-                  className="text-slate-300 hover:text-red-500 transition-colors"
+                  className="text-slate-300 dark:text-dk-border hover:text-red-500 dark:hover:text-red-400 transition-colors"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

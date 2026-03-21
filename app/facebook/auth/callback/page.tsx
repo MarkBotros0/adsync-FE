@@ -15,13 +15,13 @@ export default function FacebookCallbackPage() {
 
       if (error) {
         console.error('Facebook auth error:', error);
-        router.push('/?error=' + encodeURIComponent(error));
+        router.push('/login?error=' + encodeURIComponent(error));
         return;
       }
 
       if (!code || !state) {
         console.error('Missing code or state parameter');
-        router.push('/?error=missing_parameters');
+        router.push('/login?error=missing_parameters');
         return;
       }
 
@@ -35,22 +35,20 @@ export default function FacebookCallbackPage() {
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
           console.error('Backend error:', errorData);
-          router.push('/?error=' + encodeURIComponent(errorData.detail || 'auth_failed'));
+          router.push('/login?error=' + encodeURIComponent(errorData.detail || 'auth_failed'));
           return;
         }
 
         const data = await response.json();
         
         if (data.success && data.session_id) {
-          // Store session_id and redirect to Facebook dashboard
-          sessionStorage.setItem('session_id', data.session_id);
-          router.push(`/mentions?session_id=${data.session_id}`);
+          router.push('/connect?connected=facebook');
         } else {
-          router.push('/?error=no_session');
+          router.push('/login?error=no_session');
         }
       } catch (err) {
         console.error('Error during callback:', err);
-        router.push('/?error=callback_failed');
+        router.push('/login?error=callback_failed');
       }
     };
 

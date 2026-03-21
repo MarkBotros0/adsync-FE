@@ -153,14 +153,14 @@ function InfluencersByMediaType({ totalFacebookPosts }: { totalFacebookPosts: nu
   const max = Math.max(1, ...items.map(i => i.count));
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-        <h3 className="text-sm font-semibold text-slate-800">Posts by Platform</h3>
+    <div className="bg-white dark:bg-dk-surface rounded-xl border border-slate-200 dark:border-dk-border overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-dk-border">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-purple-100">Posts by Platform</h3>
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 text-xs text-slate-400 font-medium border border-slate-200 px-2.5 py-1 rounded-lg cursor-not-allowed opacity-60">
+          <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-purple-500 font-medium border border-slate-200 dark:border-dk-border px-2.5 py-1 rounded-lg cursor-not-allowed opacity-60">
             <Sparkles className="h-3 w-3" />
             Run AI Analysis
-            <span className="text-[10px] font-semibold bg-slate-200 text-slate-400 px-1 py-0.5 rounded uppercase tracking-wide">Soon</span>
+            <span className="text-[10px] font-semibold bg-slate-200 dark:bg-dk-raised text-slate-400 dark:text-purple-500 px-1 py-0.5 rounded uppercase tracking-wide">Soon</span>
           </span>
         </div>
       </div>
@@ -170,12 +170,12 @@ function InfluencersByMediaType({ totalFacebookPosts }: { totalFacebookPosts: nu
             const pct = (item.count / max) * 100;
             return (
               <div key={item.label} className="flex flex-col items-center gap-1 flex-1">
-                <span className="text-xs font-semibold text-slate-700">{item.count}</span>
+                <span className="text-xs font-semibold text-slate-700 dark:text-purple-200">{item.count}</span>
                 <div
                   className={`w-full rounded-t-lg ${item.color} opacity-90`}
                   style={{ height: `${Math.max(4, pct)}%` }}
                 />
-                <span className="text-[10px] text-slate-500 text-center leading-tight">{item.label}</span>
+                <span className="text-[10px] text-slate-500 dark:text-purple-400 text-center leading-tight">{item.label}</span>
               </div>
             );
           })}
@@ -236,7 +236,7 @@ export default function AnalyticsPage() {
 
   if (!stats) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500">
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500 dark:text-purple-400">
         <p className="text-sm">No data available. Connect a Facebook page to see analytics.</p>
       </div>
     );
@@ -247,7 +247,7 @@ export default function AnalyticsPage() {
       {/* Stats bar */}
       <StatsBar stats={stats} />
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-5">
+      <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-slate-50 dark:bg-dk-bg">
         {/* Row 1: Volume + Sentiment */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <VolumeReachChart data={volumeData} />

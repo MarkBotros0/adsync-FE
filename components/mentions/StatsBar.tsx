@@ -47,23 +47,30 @@ const items = (s: MentionStats) => [
   },
 ];
 
+const DARK_VALUE_COLORS: Record<string, string> = {
+  'text-slate-700': 'dark:text-purple-100',
+  'text-red-600':   'dark:text-red-400',
+  'text-slate-400': 'dark:text-purple-500',
+  'text-green-600': 'dark:text-green-400',
+};
+
 export function StatsBar({ stats }: StatsBarProps) {
   return (
-    <div className="bg-white border-b border-slate-200 px-6 py-4">
+    <div className="bg-white dark:bg-dk-surface border-b border-slate-200 dark:border-dk-border px-6 py-4">
       <div className="flex items-start gap-8 overflow-x-auto pb-1">
         {items(stats).map(item => (
           <div key={item.label} className="flex items-start gap-3 shrink-0">
-            <div className="mt-0.5 p-2 bg-slate-100 rounded-lg">
-              <item.icon className="h-4 w-4 text-slate-500" />
+            <div className="mt-0.5 p-2 bg-slate-100 dark:bg-dk-raised rounded-lg">
+              <item.icon className="h-4 w-4 text-slate-500 dark:text-purple-400" />
             </div>
             <div>
-              <p className="text-[11px] text-slate-500 leading-none mb-1">{item.label}</p>
+              <p className="text-[11px] text-slate-500 dark:text-purple-400 leading-none mb-1">{item.label}</p>
               <div className="flex items-baseline gap-1">
-                <span className={`text-2xl font-semibold leading-none ${item.color}`}>
+                <span className={`text-2xl font-semibold leading-none ${item.color} ${DARK_VALUE_COLORS[item.color] ?? ''}`}>
                   {item.value}
                 </span>
                 {(item as any).extra && (
-                  <span className="text-xs font-medium text-green-600">
+                  <span className="text-xs font-medium text-green-600 dark:text-green-400">
                     {(item as any).extra}
                   </span>
                 )}

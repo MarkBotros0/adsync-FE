@@ -132,30 +132,30 @@ export default function MentionsPage() {
       <StatsBar stats={stats ?? emptyStats} />
 
       {/* Mentions list header */}
-      <div className="bg-white border-b border-slate-200 px-5 py-2.5 flex items-center gap-4">
+      <div className="bg-white dark:bg-dk-surface border-b border-slate-200 dark:border-dk-border px-5 py-2.5 flex items-center gap-4">
         <div className="flex items-center gap-3 text-sm">
           <button
             onClick={() => setSort('recent')}
-            className={`font-medium transition-colors ${sort === 'recent' ? 'text-purple-700' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`font-medium transition-colors ${sort === 'recent' ? 'text-purple-700 dark:text-purple-300' : 'text-slate-500 dark:text-purple-400 hover:text-slate-700 dark:hover:text-purple-200'}`}
           >
             Recent first
           </button>
-          <span className="text-slate-200">|</span>
+          <span className="text-slate-200 dark:text-dk-border">|</span>
           <button
             onClick={() => setSort('popular')}
-            className={`font-medium transition-colors ${sort === 'popular' ? 'text-purple-700' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`font-medium transition-colors ${sort === 'popular' ? 'text-purple-700 dark:text-purple-300' : 'text-slate-500 dark:text-purple-400 hover:text-slate-700 dark:hover:text-purple-200'}`}
           >
             Popular first
           </button>
         </div>
 
         <div className="ml-auto flex items-center gap-3">
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-slate-400 dark:text-purple-500">
             {selectedPage ? `${selectedPage.name} · Facebook` : 'Demo data'}
           </span>
           <button
             onClick={handleUpdate}
-            className="flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-800 font-medium transition-colors"
+            className="flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium transition-colors"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${updating || loading ? 'animate-spin' : ''}`} />
             Update Data
@@ -172,12 +172,12 @@ export default function MentionsPage() {
 
       {/* Mentions list */}
       {!loading && (
-        <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+        <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-dk-border bg-white dark:bg-dk-bg">
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center px-6">
               <div className="text-4xl mb-4">📭</div>
-              <h3 className="text-lg font-semibold text-slate-700 mb-2">No mentions found</h3>
-              <p className="text-sm text-slate-500">
+              <h3 className="text-lg font-semibold text-slate-700 dark:text-purple-200 mb-2">No mentions found</h3>
+              <p className="text-sm text-slate-500 dark:text-purple-400">
                 Try adjusting your filters or clearing them to see all mentions.
               </p>
             </div>

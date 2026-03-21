@@ -31,16 +31,41 @@ interface LogoutResponse {
   message: string;
 }
 
-// Auth endpoints
+// Auth endpoints (legacy + brand-linked)
 export const authAPI = {
-  login: (): Promise<AxiosResponse<LoginResponse>> => 
-    api.get<LoginResponse>('/facebook/auth/login'),
-  
-  checkStatus: (sessionId: string): Promise<AxiosResponse<AuthStatus>> => 
+  /** Initiate Facebook OAuth. Pass brand JWT to link the session to the brand. */
+  login: (brandToken?: string): Promise<AxiosResponse<LoginResponse>> =>
+    api.get<LoginResponse>('/facebook/auth/login', brandToken
+      ? { headers: { Authorization: `Bearer ${brandToken}` } }
+      : undefined),
+
+  checkStatus: (sessionId: string): Promise<AxiosResponse<AuthStatus>> =>
     api.get<AuthStatus>(`/facebook/auth/status/${sessionId}`),
-  
-  logout: (sessionId: string): Promise<AxiosResponse<LogoutResponse>> => 
+
+  logout: (sessionId: string): Promise<AxiosResponse<LogoutResponse>> =>
     api.post<LogoutResponse>(`/facebook/auth/logout/${sessionId}`),
+};
+
+interface FacebookSessionResponse {
+  connected: boolean;
+  session_id: string | null;
+  user_name: string | null;
+  user_id?: string | null;
+}
+
+/** Brand-linked Facebook session management (requires brand JWT). */
+export const facebookSessionAPI = {
+  /** Get the Facebook session linked to the authenticated brand. */
+  getSession: (brandToken: string): Promise<AxiosResponse<FacebookSessionResponse>> =>
+    api.get<FacebookSessionResponse>('/facebook/auth/session', {
+      headers: { Authorization: `Bearer ${brandToken}` },
+    }),
+
+  /** Disconnect the Facebook account from the brand. */
+  disconnect: (brandToken: string): Promise<AxiosResponse<{ success: boolean; message: string }>> =>
+    api.delete('/facebook/auth/disconnect', {
+      headers: { Authorization: `Bearer ${brandToken}` },
+    }),
 };
 
 // Pages endpoints
