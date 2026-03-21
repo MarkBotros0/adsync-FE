@@ -2,127 +2,182 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Share2, 
-  Camera, 
-  Video,
+import {
+  MessageSquare,
+  BarChart2,
+  Sparkles,
+  Users,
+  Globe,
   Settings,
-  ChevronLeft,
-  ChevronRight,
+  FileText,
+  Bell,
+  UserCheck,
   X,
-  BarChart3
+  ChevronDown,
+  LogOut,
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { useSidebar } from '@/contexts/sidebar-context';
 import { useState } from 'react';
+import type { FacebookPage } from '@/lib/types';
 
 interface SidebarProps {
   isMobileOpen: boolean;
   setIsMobileOpen: (open: boolean) => void;
   onLogout: () => void;
+  pages?: FacebookPage[];
+  selectedPage?: FacebookPage | null;
+  onPageSelect?: (page: FacebookPage) => void;
 }
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Facebook', href: '/facebook', icon: Share2 },
-  { name: 'Instagram', href: '/instagram', icon: Camera },
-  { name: 'TikTok', href: '/tiktok', icon: Video },
-  { name: 'Settings', href: '/settings', icon: Settings },
+const primaryNav = [
+  { name: 'Mentions',    href: '/mentions',    icon: MessageSquare },
+  { name: 'Analytics',  href: '/analytics',   icon: BarChart2     },
+  { name: 'AI Digest',  href: '/ai-digest',   icon: Sparkles,  badge: 'NEW' },
+  { name: 'Influencers',href: '/influencers', icon: Users         },
+  { name: 'Sites',      href: '/sites',       icon: Globe         },
+  { name: 'Settings',   href: '/settings',    icon: Settings      },
 ];
 
-export function Sidebar({ isMobileOpen, setIsMobileOpen, onLogout }: SidebarProps) {
+const secondaryNav = [
+  { name: 'Reports',      href: '/reports', icon: FileText  },
+  { name: 'Alerts',       href: '/alerts',  icon: Bell      },
+  { name: 'Team Members', href: '/team',    icon: UserCheck },
+];
+
+export function Sidebar({ isMobileOpen, setIsMobileOpen, onLogout, pages = [], selectedPage, onPageSelect }: SidebarProps) {
   const pathname = usePathname();
-  const { isCollapsed, toggleSidebar } = useSidebar();
+  const [showPages, setShowPages] = useState(false);
+
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 
   return (
     <>
-      {/* Sidebar Container */}
+      {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-40 bg-white border-r border-slate-200 shadow-sm transform transition-all duration-300 ease-in-out lg:translate-x-0 
-        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} 
-        ${isCollapsed ? 'lg:w-20' : 'lg:w-64'} 
-        w-64`}
+        className={`fixed inset-y-0 left-0 z-40 w-64 flex flex-col transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto
+          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{ background: 'linear-gradient(180deg, #1a0a2e 0%, #16092a 100%)' }}
       >
-        <div className="flex flex-col h-full relative">
-          {/* Mobile Close Button */}
-          <div className="lg:hidden absolute top-3 right-3 z-50">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsMobileOpen(false);
-              }}
-              className="h-10 w-10"
-            >
-              <X className="h-6 w-6 text-slate-600" />
-            </Button>
-          </div>
+        {/* Mobile close */}
+        <button
+          className="lg:hidden absolute top-4 right-4 text-purple-300 hover:text-white"
+          onClick={() => setIsMobileOpen(false)}
+        >
+          <X className="h-5 w-5" />
+        </button>
 
-          {/* Logo Section */}
-          <div className="flex flex-col items-center justify-center pt-12 pb-6 lg:py-6 border-b border-slate-200 gap-3">
-            <div className="relative">
-              <div className={`bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center transition-all duration-300 ${
-                isCollapsed ? 'lg:w-12 lg:h-12' : 'w-16 h-16'
-              } w-16 h-16`}>
-                <BarChart3 className={`text-white ${isCollapsed ? 'lg:w-6 lg:h-6' : 'w-8 h-8'} w-8 h-8`} />
-              </div>
-            </div>
-            <div className={`text-center ${isCollapsed ? 'lg:hidden' : 'block'}`}>
-              <h1 className="text-lg font-bold px-2">Analytics Pro</h1>
-              <p className="text-xs text-slate-600">Social Media Insights</p>
-            </div>
-          </div>
-
-          {/* Navigation Section */}
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setIsMobileOpen(false)}
-                  className={`flex items-center text-sm font-medium rounded-lg transition-colors 
-                  ${isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}
-                  ${isCollapsed ? 'lg:justify-center lg:p-2' : 'px-4 py-3'} 
-                  px-4 py-3`}
+        {/* Brand selector */}
+        <div className="px-4 pt-5 pb-3 border-b border-purple-900/50">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              {selectedPage ? (
+                <button
+                  onClick={() => setShowPages(!showPages)}
+                  className="w-full flex items-center gap-2 bg-purple-800/40 hover:bg-purple-800/60 rounded-lg px-3 py-2 transition-colors"
                 >
-                  <item.icon className={`${isCollapsed ? 'lg:w-7 lg:h-7 lg:mr-0' : 'w-5 h-5 mr-3'} w-5 h-5 mr-3`} />
-                  <span className={`${isCollapsed ? 'lg:hidden' : 'block'}`}>
-                    {item.name}
+                  <span className="h-2.5 w-2.5 rounded-full bg-purple-400 shrink-0" />
+                  <span className="text-white font-semibold text-sm truncate flex-1 text-left">
+                    {selectedPage.name}
                   </span>
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Desktop collapse toggle */}
-          <div className="hidden lg:flex items-center justify-center border-t border-slate-200 py-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleSidebar}
-              className="h-8 w-8"
-              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              {isCollapsed ? (
-                <ChevronRight className="h-4 w-4" />
+                  <ChevronDown className={`h-3.5 w-3.5 text-purple-300 shrink-0 transition-transform ${showPages ? 'rotate-180' : ''}`} />
+                </button>
               ) : (
-                <ChevronLeft className="h-4 w-4" />
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-purple-400 shrink-0" />
+                  <span className="text-white font-semibold text-sm">AdSync</span>
+                </div>
               )}
-            </Button>
+
+              {/* Page dropdown */}
+              {showPages && pages.length > 0 && (
+                <div className="mt-1 bg-purple-900/80 rounded-lg overflow-hidden">
+                  {pages.map(page => (
+                    <button
+                      key={page.id}
+                      onClick={() => {
+                        onPageSelect?.(page);
+                        setShowPages(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors
+                        ${page.id === selectedPage?.id
+                          ? 'text-white bg-purple-700/50'
+                          : 'text-purple-300 hover:text-white hover:bg-purple-800/40'
+                        }`}
+                    >
+                      {page.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
+        </div>
+
+        {/* Primary Nav */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+          {primaryNav.map(item => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={() => setIsMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                  ${active
+                    ? 'bg-purple-700/60 text-white'
+                    : 'text-purple-300 hover:text-white hover:bg-purple-800/40'
+                  }`}
+              >
+                <item.icon className="h-4 w-4 shrink-0" />
+                <span className="flex-1">{item.name}</span>
+                {(item as any).badge && (
+                  <span className="text-[10px] font-bold bg-purple-500 text-white px-1.5 py-0.5 rounded uppercase tracking-wide">
+                    {(item as any).badge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+
+          {/* Divider */}
+          <div className="my-3 border-t border-purple-900/50" />
+
+          {/* Secondary Nav */}
+          {secondaryNav.map(item => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={() => setIsMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                  ${active
+                    ? 'bg-purple-700/60 text-white'
+                    : 'text-purple-300 hover:text-white hover:bg-purple-800/40'
+                  }`}
+              >
+                <item.icon className="h-4 w-4 shrink-0" />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Bottom: upgrade + logout */}
+        <div className="px-3 pb-5 space-y-2">
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-purple-400 hover:text-white hover:bg-purple-800/40 transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
         </div>
       </div>
 
-      {/* Overlay for mobile */}
+      {/* Mobile overlay */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 z-30 bg-black/60 lg:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
       )}

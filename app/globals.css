@@ -1,8 +1,20 @@
-@import "tailwindcss";
+@import "tailwindcss/index.css";
 
 @theme {
   --color-background: #ffffff;
   --color-foreground: #0f172a;
+}
+
+/* Pointer cursor for all interactive elements */
+button:not([disabled]),
+a,
+[role="button"],
+select,
+label[for],
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"] {
+  cursor: pointer;
 }
 
 /* Custom scrollbar */

@@ -44,7 +44,7 @@ export default function FacebookCallbackPage() {
         if (data.success && data.session_id) {
           // Store session_id and redirect to Facebook dashboard
           sessionStorage.setItem('session_id', data.session_id);
-          router.push(`/facebook?session_id=${data.session_id}`);
+          router.push(`/mentions?session_id=${data.session_id}`);
         } else {
           router.push('/?error=no_session');
         }
