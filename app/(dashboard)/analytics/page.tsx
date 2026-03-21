@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { StatsBar } from '@/components/mentions/StatsBar';
+import { StatsBar } from '@/components/content/StatsBar';
 import { VolumeReachChart } from '@/components/charts/VolumeReachChart';
 import { SentimentTimelineChart } from '@/components/charts/SentimentTimelineChart';
 import { InteractionsChart } from '@/components/charts/InteractionsChart';

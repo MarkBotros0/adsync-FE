@@ -289,7 +289,7 @@ export interface SubscriptionFeatures {
   max_brands: number;           // -1 = unlimited
   max_pages: number;
   max_ad_accounts: number;
-  mentions_limit: number;
+  content_limit: number;
   analytics: boolean;
   ai_digest: boolean;
   alerts: boolean;

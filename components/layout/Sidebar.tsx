@@ -33,7 +33,7 @@ interface SidebarProps {
 }
 
 const primaryNav = [
-  { name: 'Mentions',     href: '/mentions',     icon: MessageSquare },
+  { name: 'Content',      href: '/content',      icon: MessageSquare },
   { name: 'Analytics',   href: '/analytics',    icon: BarChart2     },
   { name: 'AI Digest',   href: '/ai-digest',    icon: Sparkles, badge: 'NEW' },
   { name: 'Influencers', href: '/influencers',  icon: Users         },

@@ -204,8 +204,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
           </div>
 
-          {/* Top filter bar — only shown on Mentions */}
-          {pathname === '/mentions' && <div className="shrink-0 bg-white dark:bg-dk-surface border-b border-slate-200 dark:border-dk-border px-4 py-3 flex items-center gap-3 flex-wrap">
+          {/* Top filter bar — only shown on Content */}
+          {pathname === '/content' && <div className="shrink-0 bg-white dark:bg-dk-surface border-b border-slate-200 dark:border-dk-border px-4 py-3 flex items-center gap-3 flex-wrap">
             {/* Date picker */}
             <DatePicker preset={datePreset} onChange={setDatePreset} />
 
@@ -241,8 +241,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {children}
             </main>
 
-            {/* Right panel — only shown on Mentions */}
-            {pathname === '/mentions' && (
+            {/* Right panel — only shown on Content */}
+            {pathname === '/content' && (
               <RightPanel
                 selectedPlatforms={selectedPlatforms}
                 onTogglePlatform={togglePlatform}

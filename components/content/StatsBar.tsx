@@ -16,7 +16,7 @@ interface StatsBarProps {
 const items = (s: MentionStats) => [
   {
     icon: MessageSquare,
-    label: 'mentions',
+    label: 'content',
     value: s.total_mentions.toLocaleString(),
     color: 'text-slate-700',
   },
@@ -34,13 +34,13 @@ const items = (s: MentionStats) => [
   },
   {
     icon: TrendingDown,
-    label: 'negative mentions',
+    label: 'negative content',
     value: s.negative_count === 0 ? '-' : s.negative_count.toString(),
     color: s.negative_count > 0 ? 'text-red-600' : 'text-slate-400',
   },
   {
     icon: TrendingUp,
-    label: 'positive mentions',
+    label: 'positive content',
     value: s.positive_count.toString(),
     extra: s.positive_percentage === 100 ? '100%' : `${s.positive_percentage}%`,
     color: 'text-green-600',

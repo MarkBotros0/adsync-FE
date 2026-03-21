@@ -117,14 +117,14 @@ export default function LoginPage() {
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    if (auth.isAuthenticated && !auth.isLoading) router.replace('/mentions');
+    if (auth.isAuthenticated && !auth.isLoading) router.replace('/content');
   }, [auth.isAuthenticated, auth.isLoading, router]);
 
   useEffect(() => {
     const session = searchParams.get('session_id');
     if (session) {
       sessionStorage.setItem('session_id', session);
-      router.push(`/mentions?session_id=${session}`);
+      router.push(`/connect?session_id=${session}`);
     }
   }, [searchParams, router]);
 
@@ -143,7 +143,7 @@ export default function LoginPage() {
     try {
       await auth.login(loginEmail, loginPassword);
       toast.success('Welcome back!');
-      router.push('/mentions');
+      router.push('/content');
     } catch (err: any) {
       toast.error(err?.response?.data?.detail ?? 'Login failed. Check your credentials.');
     } finally {
@@ -159,7 +159,7 @@ export default function LoginPage() {
     try {
       await auth.register({ name: signupName, email: signupEmail, password: signupPassword, subscription_name: signupPlan });
       toast.success(`Welcome to AdSync, ${signupName}!`);
-      router.push('/mentions');
+      router.push('/content');
     } catch (err: any) {
       toast.error(err?.response?.data?.detail ?? 'Registration failed. Please try again.');
     } finally {

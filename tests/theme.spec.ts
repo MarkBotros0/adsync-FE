@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 
 // All dashboard tabs with their expected heading text
 const TABS = [
-  { path: '/mentions',   heading: null },           // has sort buttons, not a plain heading
+  { path: '/content',    heading: null },           // has sort buttons, not a plain heading
   { path: '/analytics',  heading: null },           // dynamic content
   { path: '/ai-digest',  heading: 'AI Digest' },
   { path: '/influencers',heading: 'Influencers' },

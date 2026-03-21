@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { StatsBar } from '@/components/mentions/StatsBar';
-import { MentionCard } from '@/components/mentions/MentionCard';
+import { StatsBar } from '@/components/content/StatsBar';
+import { MentionCard } from '@/components/content/MentionCard';
 import { useFilters, getDateRange } from '@/contexts/filter-context';
 import { pagesAPI } from '@/lib/api';
 import type { Mention, MentionStats } from '@/lib/types';
@@ -176,9 +176,9 @@ export default function MentionsPage() {
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center px-6">
               <div className="text-4xl mb-4">📭</div>
-              <h3 className="text-lg font-semibold text-slate-700 dark:text-purple-200 mb-2">No mentions found</h3>
+              <h3 className="text-lg font-semibold text-slate-700 dark:text-purple-200 mb-2">No content found</h3>
               <p className="text-sm text-slate-500 dark:text-purple-400">
-                Try adjusting your filters or clearing them to see all mentions.
+                Try adjusting your filters or clearing them to see all content.
               </p>
             </div>
           ) : (
