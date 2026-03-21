@@ -283,7 +283,7 @@ export interface BrandConfig {
 
 // ─── Brand Account & Subscription Types ──────────────────────────────────────
 
-export type SubscriptionName = 'free' | 'starter' | 'pro' | 'enterprise';
+export type SubscriptionName = 'free' | 'starter' | 'pro';
 
 export interface SubscriptionFeatures {
   max_brands: number;           // -1 = unlimited
@@ -299,9 +299,6 @@ export interface SubscriptionFeatures {
   instagram: boolean;
   tiktok: boolean;
   export: boolean;
-  custom_integrations?: boolean;
-  dedicated_support?: boolean;
-  sla?: boolean;
 }
 
 export interface Subscription {

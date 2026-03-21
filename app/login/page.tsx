@@ -58,16 +58,15 @@ function Field({
 // ─── Compact plan pill ─────────────────────────────────────────────────────────
 
 const PLAN_ACCENT: Record<string, { ring: string; badge: string; dot: string }> = {
-  free:       { ring: 'ring-white/20',    badge: 'bg-white/10 text-white/50',         dot: 'bg-white/40' },
-  starter:    { ring: 'ring-purple-500',  badge: 'bg-purple-600/30 text-purple-300',   dot: 'bg-purple-400' },
-  pro:        { ring: 'ring-indigo-500',  badge: 'bg-indigo-600/30 text-indigo-300',   dot: 'bg-indigo-400' },
-  enterprise: { ring: 'ring-pink-500',    badge: 'bg-pink-600/30 text-pink-300',       dot: 'bg-pink-400' },
+  free:    { ring: 'ring-white/20',    badge: 'bg-white/10 text-white/50',         dot: 'bg-white/40' },
+  starter: { ring: 'ring-purple-500',  badge: 'bg-purple-600/30 text-purple-300',   dot: 'bg-purple-400' },
+  pro:     { ring: 'ring-indigo-500',  badge: 'bg-indigo-600/30 text-indigo-300',   dot: 'bg-indigo-400' },
 };
 
 function PlanPill({ plan, selected, onSelect }: { plan: Subscription; selected: boolean; onSelect: () => void }) {
   const accent = PLAN_ACCENT[plan.name] ?? PLAN_ACCENT.free;
   const price = plan.price_monthly === 0
-    ? plan.name === 'enterprise' ? 'Custom' : 'Free'
+    ? 'Free'
     : `$${(plan.price_monthly / 100).toFixed(0)}/mo`;
 
   return (
@@ -113,6 +112,9 @@ export default function LoginPage() {
   const [signupConfirm, setSignupConfirm] = useState('');
   const [signupPlan, setSignupPlan] = useState('free');
   const [plans, setPlans] = useState<Subscription[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (auth.isAuthenticated && !auth.isLoading) router.replace('/mentions');
@@ -174,7 +176,7 @@ export default function LoginPage() {
     }
   };
 
-  if (auth.isLoading) {
+  if (!mounted || auth.isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0f0620]">
         <Loader2 className="h-8 w-8 text-purple-400 animate-spin" />

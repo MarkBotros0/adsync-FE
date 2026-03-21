@@ -126,14 +126,6 @@ const PLANS = [
     cta: 'Start free trial',
     highlight: true,
   },
-  {
-    name: 'Enterprise',
-    price: 'Custom',
-    description: 'Unlimited access with dedicated support.',
-    features: ['Unlimited brands & pages', 'Unlimited mentions', 'Custom integrations', 'Dedicated support', 'SLA', 'Unlimited team members'],
-    cta: 'Contact us',
-    highlight: false,
-  },
 ];
 
 // ─── Components ───────────────────────────────────────────────────────────────
@@ -283,7 +275,7 @@ function Pricing() {
           <p className="text-white/50">Start free. Scale as you grow.</p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {PLANS.map(plan => (
             <div
               key={plan.name}
@@ -320,7 +312,7 @@ function Pricing() {
               </ul>
 
               <Link
-                href={plan.name === 'Enterprise' ? 'mailto:hello@adsync.io' : '/login?tab=signup'}
+                href="/login?tab=signup"
                 className={`block text-center text-sm font-semibold py-2.5 rounded-xl transition-all ${
                   plan.highlight
                     ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/40'
