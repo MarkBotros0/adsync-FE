@@ -11,7 +11,6 @@ import {
 } from 'recharts';
 import { INTERACTIONS_DATA } from '@/lib/mock-data';
 import type { InteractionDataPoint } from '@/lib/types';
-import { Download, Sparkles } from 'lucide-react';
 import { useTheme } from '@/contexts/theme-context';
 
 export function InteractionsChart({ data }: { data?: InteractionDataPoint[] }) {
@@ -28,15 +27,6 @@ export function InteractionsChart({ data }: { data?: InteractionDataPoint[] }) {
     <div className="bg-white dark:bg-dk-surface rounded-xl border border-slate-200 dark:border-dk-border overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-dk-border">
         <h3 className="text-sm font-semibold text-slate-800 dark:text-purple-100">Social Media Interactions</h3>
-        <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium border border-purple-200 dark:border-purple-800 px-2.5 py-1 rounded-lg transition-colors">
-            <Sparkles className="h-3 w-3" />
-            Run AI Analysis
-          </button>
-          <button className="text-slate-400 dark:text-purple-500 hover:text-slate-600 dark:hover:text-purple-300">
-            <Download className="h-4 w-4" />
-          </button>
-        </div>
       </div>
 
       <div className="p-5">

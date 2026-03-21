@@ -1,6 +1,5 @@
 'use client';
 
-import { Download, Sparkles } from 'lucide-react';
 import type { TopCountry } from '@/lib/types';
 
 export function TopCountriesChart({ data }: { data?: TopCountry[] }) {
@@ -10,15 +9,6 @@ export function TopCountriesChart({ data }: { data?: TopCountry[] }) {
         <div>
           <h3 className="text-sm font-semibold text-slate-800 dark:text-purple-100">Top Countries</h3>
           <p className="text-xs text-slate-400 dark:text-purple-500"># of mentions by country</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium border border-purple-200 dark:border-purple-800 px-2.5 py-1 rounded-lg transition-colors">
-            <Sparkles className="h-3 w-3" />
-            Run AI Analysis
-          </button>
-          <button className="text-slate-400 dark:text-purple-500 hover:text-slate-600 dark:hover:text-purple-300">
-            <Download className="h-4 w-4" />
-          </button>
         </div>
       </div>
 

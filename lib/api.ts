@@ -9,6 +9,13 @@ import type {
   BrandSession,
   BrandValidateResponse,
   Subscription,
+  IGMediaList,
+  IGMediaWithInsights,
+  IGMediaInsights,
+  IGAccountSummary,
+  IGDemographics,
+  IGMedia,
+  IGComment,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -52,6 +59,34 @@ interface FacebookSessionResponse {
   user_name: string | null;
   user_id?: string | null;
 }
+
+interface InstagramSessionResponse {
+  connected: boolean;
+  session_id: string | null;
+  ig_user_id: string | null;
+  username: string | null;
+}
+
+/** Brand-linked Instagram session management (requires brand JWT). */
+export const instagramSessionAPI = {
+  /** Initiate Instagram Business Login. Pass brand JWT to link the session. */
+  connect: (brandToken: string): Promise<AxiosResponse<LoginResponse>> =>
+    api.get<LoginResponse>('/instagram/auth/connect', {
+      headers: { Authorization: `Bearer ${brandToken}` },
+    }),
+
+  /** Get the Instagram session linked to the authenticated brand. */
+  getSession: (brandToken: string): Promise<AxiosResponse<InstagramSessionResponse>> =>
+    api.get<InstagramSessionResponse>('/instagram/auth/session', {
+      headers: { Authorization: `Bearer ${brandToken}` },
+    }),
+
+  /** Disconnect the Instagram account from the brand. */
+  disconnect: (brandToken: string): Promise<AxiosResponse<{ success: boolean; message: string }>> =>
+    api.delete('/instagram/auth/disconnect', {
+      headers: { Authorization: `Bearer ${brandToken}` },
+    }),
+};
 
 /** Brand-linked Facebook session management (requires brand JWT). */
 export const facebookSessionAPI = {
@@ -157,6 +192,137 @@ export const subscriptionsAPI = {
 
   get: (name: string): Promise<AxiosResponse<{ success: boolean; subscription: Subscription }>> =>
     api.get(`/subscriptions/${name}`),
+};
+
+// ─── Instagram API ────────────────────────────────────────────────────────────
+//
+// All calls require session_id (Instagram session) + ig_user_id.
+
+export const instagramAPI = {
+  /** Get the full profile for an Instagram account. */
+  getProfile: (
+    igUserId: string,
+    sessionId: string,
+  ): Promise<AxiosResponse<ApiResponse<IGMedia>>> =>
+    api.get<ApiResponse<IGMedia>>(`/instagram/accounts/${igUserId}/profile`, {
+      params: { session_id: sessionId },
+    }),
+
+  /** Get feed media (posts, reels, carousels) with engagement counts. */
+  getMedia: (
+    igUserId: string,
+    sessionId: string,
+    options?: { limit?: number; since?: string; until?: string; after?: string },
+  ): Promise<AxiosResponse<ApiResponse<IGMediaList>>> =>
+    api.get<ApiResponse<IGMediaList>>(`/instagram/accounts/${igUserId}/media`, {
+      params: {
+        session_id: sessionId,
+        limit: options?.limit,
+        since: options?.since,
+        until: options?.until,
+        after: options?.after,
+      },
+    }),
+
+  /** Get media + per-post insights in a single call (capped at 25 items). */
+  getMediaWithInsights: (
+    igUserId: string,
+    sessionId: string,
+    options?: { limit?: number; since?: string; until?: string },
+  ): Promise<AxiosResponse<ApiResponse<{ total: number; media: IGMediaWithInsights[]; paging: object }>>> =>
+    api.get(`/instagram/accounts/${igUserId}/media/with-insights`, {
+      params: {
+        session_id: sessionId,
+        limit: options?.limit,
+        since: options?.since,
+        until: options?.until,
+      },
+    }),
+
+  /** Get currently active stories (24-hour window). */
+  getStories: (
+    igUserId: string,
+    sessionId: string,
+  ): Promise<AxiosResponse<ApiResponse<{ total: number; stories: IGMedia[] }>>> =>
+    api.get(`/instagram/accounts/${igUserId}/stories`, {
+      params: { session_id: sessionId },
+    }),
+
+  /** Get a single media object. Requires ig_user_id to look up the page token. */
+  getSingleMedia: (
+    mediaId: string,
+    sessionId: string,
+    igUserId: string,
+  ): Promise<AxiosResponse<ApiResponse<IGMedia>>> =>
+    api.get<ApiResponse<IGMedia>>(`/instagram/media/${mediaId}`, {
+      params: { session_id: sessionId, ig_user_id: igUserId },
+    }),
+
+  /** Get per-post insights. `mediaProductType`: 'FEED' | 'REELS' | 'STORY' */
+  getMediaInsights: (
+    mediaId: string,
+    sessionId: string,
+    igUserId: string,
+    mediaProductType: string = 'FEED',
+  ): Promise<AxiosResponse<ApiResponse<IGMediaInsights>>> =>
+    api.get<ApiResponse<IGMediaInsights>>(`/instagram/media/${mediaId}/insights`, {
+      params: { session_id: sessionId, ig_user_id: igUserId, media_product_type: mediaProductType },
+    }),
+
+  /** Get comments on a media object. */
+  getComments: (
+    mediaId: string,
+    sessionId: string,
+    igUserId: string,
+    limit: number = 50,
+  ): Promise<AxiosResponse<ApiResponse<{ media_id: string; total: number; comments: IGComment[]; paging: object }>>> =>
+    api.get(`/instagram/media/${mediaId}/comments`, {
+      params: { session_id: sessionId, ig_user_id: igUserId, limit },
+    }),
+
+  /** Get children of a carousel album. */
+  getCarouselChildren: (
+    mediaId: string,
+    sessionId: string,
+    igUserId: string,
+  ): Promise<AxiosResponse<ApiResponse<{ media_id: string; total: number; children: IGMedia[] }>>> =>
+    api.get(`/instagram/media/${mediaId}/children`, {
+      params: { session_id: sessionId, ig_user_id: igUserId },
+    }),
+
+  /** Get time-series account insights. period: 'day' | 'week' | 'days_28' | 'month' */
+  getAccountInsights: (
+    igUserId: string,
+    sessionId: string,
+    options?: { period?: string; since?: string; until?: string },
+  ): Promise<AxiosResponse<ApiResponse<Record<string, { value: number; end_time: string }[]>>>> =>
+    api.get(`/instagram/accounts/${igUserId}/insights`, {
+      params: {
+        session_id: sessionId,
+        period: options?.period ?? 'day',
+        since: options?.since,
+        until: options?.until,
+      },
+    }),
+
+  /** Get a full analytics summary (engagement totals + time-series + demographics). */
+  getAccountSummary: (
+    igUserId: string,
+    sessionId: string,
+    days: number = 30,
+  ): Promise<AxiosResponse<ApiResponse<IGAccountSummary>>> =>
+    api.get<ApiResponse<IGAccountSummary>>(`/instagram/accounts/${igUserId}/insights/summary`, {
+      params: { session_id: sessionId, days },
+    }),
+
+  /** Get lifetime audience demographics (gender/age, cities, countries). */
+  getAudienceDemographics: (
+    igUserId: string,
+    sessionId: string,
+  ): Promise<AxiosResponse<ApiResponse<IGDemographics>>> =>
+    api.get<ApiResponse<IGDemographics>>(`/instagram/accounts/${igUserId}/insights/audience`, {
+      params: { session_id: sessionId },
+    }),
 };
 
 export default api;

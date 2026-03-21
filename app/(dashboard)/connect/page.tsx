@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { authAPI, facebookSessionAPI } from '@/lib/api';
+import { authAPI, facebookSessionAPI, instagramSessionAPI } from '@/lib/api';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
 import { Loader2, CheckCircle2, Circle, ExternalLink, Unplug } from 'lucide-react';
 import { toast } from 'sonner';
@@ -83,7 +83,7 @@ const PLATFORMS: PlatformDef[] = [
     bg: 'bg-pink-500/10',
     ring: 'ring-pink-500/40',
     icon: <InstagramIcon className="h-7 w-7" />,
-    available: false,
+    available: true,
   },
   {
     id: 'tiktok',
@@ -234,12 +234,16 @@ export default function ConnectPage() {
     Object.fromEntries(PLATFORMS.map(p => [p.id, { connected: false, loading: p.available }]))
   );
 
-  // Load Facebook connection status on mount
+  // Load Facebook + Instagram connection status on mount
   useEffect(() => {
     if (auth.isLoading) return;
 
     if (!auth.token) {
-      setStatuses(prev => ({ ...prev, facebook: { connected: false, loading: false } }));
+      setStatuses(prev => ({
+        ...prev,
+        facebook: { connected: false, loading: false },
+        instagram: { connected: false, loading: false },
+      }));
       return;
     }
 
@@ -257,43 +261,82 @@ export default function ConnectPage() {
       .catch(() => {
         setStatuses(prev => ({ ...prev, facebook: { connected: false, loading: false } }));
       });
+
+    instagramSessionAPI.getSession(auth.token)
+      .then(res => {
+        setStatuses(prev => ({
+          ...prev,
+          instagram: {
+            connected: res.data.connected,
+            user_name: res.data.username ? `@${res.data.username}` : null,
+            loading: false,
+          },
+        }));
+      })
+      .catch(() => {
+        setStatuses(prev => ({ ...prev, instagram: { connected: false, loading: false } }));
+      });
   }, [auth.token, auth.isLoading]);
 
   // Show success toast if redirected back after connecting
   useEffect(() => {
     const connected = searchParams.get('connected');
-    if (connected === 'facebook' && !toastedRef.current) {
+    if ((connected === 'facebook' || connected === 'instagram') && !toastedRef.current) {
       toastedRef.current = true;
-      toast.success('Facebook connected successfully!');
+      toast.success(`${connected.charAt(0).toUpperCase() + connected.slice(1)} connected successfully!`);
     }
   }, [searchParams]);
 
   const handleConnect = async (platformId: string) => {
-    if (platformId !== 'facebook') return;
     if (!auth.token) {
-      toast.error('You must be logged in to connect Facebook');
+      toast.error('You must be logged in to connect');
       return;
     }
 
-    try {
-      const res = await authAPI.login(auth.token);
-      window.location.href = res.data.login_url;
-    } catch {
-      toast.error('Failed to initiate Facebook connection');
+    if (platformId === 'facebook') {
+      try {
+        const res = await authAPI.login(auth.token);
+        window.location.href = res.data.login_url;
+      } catch (err: unknown) {
+        const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+        console.error('[Facebook connect]', err);
+        toast.error(detail ?? 'Failed to initiate Facebook connection');
+      }
+    } else if (platformId === 'instagram') {
+      try {
+        const res = await instagramSessionAPI.connect(auth.token);
+        window.location.href = res.data.login_url;
+      } catch (err: unknown) {
+        const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+        console.error('[Instagram connect]', err);
+        toast.error(detail ?? 'Failed to initiate Instagram connection');
+      }
     }
   };
 
   const handleDisconnect = async (platformId: string) => {
-    if (platformId !== 'facebook' || !auth.token) return;
+    if (!auth.token) return;
 
-    setStatuses(prev => ({ ...prev, facebook: { ...prev.facebook, loading: true } }));
-    try {
-      await facebookSessionAPI.disconnect(auth.token);
-      setStatuses(prev => ({ ...prev, facebook: { connected: false, loading: false } }));
-      toast.success('Facebook disconnected');
-    } catch {
-      toast.error('Failed to disconnect Facebook');
-      setStatuses(prev => ({ ...prev, facebook: { ...prev.facebook, loading: false } }));
+    if (platformId === 'facebook') {
+      setStatuses(prev => ({ ...prev, facebook: { ...prev.facebook, loading: true } }));
+      try {
+        await facebookSessionAPI.disconnect(auth.token);
+        setStatuses(prev => ({ ...prev, facebook: { connected: false, loading: false } }));
+        toast.success('Facebook disconnected');
+      } catch {
+        toast.error('Failed to disconnect Facebook');
+        setStatuses(prev => ({ ...prev, facebook: { ...prev.facebook, loading: false } }));
+      }
+    } else if (platformId === 'instagram') {
+      setStatuses(prev => ({ ...prev, instagram: { ...prev.instagram, loading: true } }));
+      try {
+        await instagramSessionAPI.disconnect(auth.token);
+        setStatuses(prev => ({ ...prev, instagram: { connected: false, loading: false } }));
+        toast.success('Instagram disconnected');
+      } catch {
+        toast.error('Failed to disconnect Instagram');
+        setStatuses(prev => ({ ...prev, instagram: { ...prev.instagram, loading: false } }));
+      }
     }
   };
 

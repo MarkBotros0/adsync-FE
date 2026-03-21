@@ -338,3 +338,105 @@ export interface BrandValidateResponse {
   brand_name: string;
   subscription: SubscriptionName;
 }
+
+// ─── Instagram Types ──────────────────────────────────────────────────────────
+
+export interface IGAccount {
+  page_id: string;
+  page_name: string;
+  ig_user_id: string;
+  username: string;
+  name: string;
+  biography: string;
+  profile_picture_url: string;
+  website: string;
+  followers_count: number;
+  follows_count: number;
+  media_count: number;
+}
+
+export interface IGAccountsResponse {
+  total: number;
+  accounts: IGAccount[];
+}
+
+export interface IGMediaEngagement {
+  likes: number;
+  comments: number;
+}
+
+export type IGMediaType = 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM';
+export type IGMediaProductType = 'FEED' | 'REELS' | 'STORY' | 'AD';
+
+export interface IGMedia {
+  id: string;
+  caption: string;
+  media_type: IGMediaType;
+  media_product_type: IGMediaProductType;
+  media_url: string;
+  thumbnail_url: string;
+  permalink: string;
+  shortcode: string;
+  timestamp: string;
+  username: string;
+  engagement: IGMediaEngagement;
+  is_comment_enabled: boolean | null;
+  is_shared_to_feed: boolean | null;
+}
+
+export interface IGMediaList {
+  total: number;
+  media: IGMedia[];
+  paging: {
+    cursors?: { before: string; after: string };
+    next?: string;
+  };
+}
+
+export interface IGMediaWithInsights extends IGMedia {
+  insights: Record<string, number>;
+}
+
+export interface IGMediaInsights {
+  media_product_type: IGMediaProductType;
+  metrics: Record<string, number>;
+}
+
+export interface IGTimeSeriesPoint {
+  value: number;
+  end_time: string;
+}
+
+export interface IGEngagementTotals {
+  total_interactions: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  reach: number;
+  accounts_engaged: number;
+}
+
+export interface IGDemographics {
+  gender_age: Record<string, number>;
+  top_cities: Record<string, number>;
+  top_countries: Record<string, number>;
+  online_followers_by_hour: Record<string, number>;
+}
+
+export interface IGAccountSummary {
+  ig_user_id: string;
+  date_range: { since: string; until: string; days: number };
+  engagement: IGEngagementTotals;
+  time_series: Record<string, IGTimeSeriesPoint[]>;
+  demographics: IGDemographics;
+}
+
+export interface IGComment {
+  id: string;
+  text: string;
+  timestamp: string;
+  username: string;
+  like_count?: number;
+  replies?: IGComment[];
+}

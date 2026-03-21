@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import { SENTIMENT_DATA } from '@/lib/mock-data';
 import type { SentimentDataPoint } from '@/lib/types';
-import { Download, Sparkles, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { useTheme } from '@/contexts/theme-context';
 
 export function SentimentTimelineChart({ data }: { data?: SentimentDataPoint[] }) {
@@ -34,15 +34,6 @@ export function SentimentTimelineChart({ data }: { data?: SentimentDataPoint[] }
           <span className="text-xs text-slate-400 dark:text-purple-500">
             AI classifies sentiment — refresh to update
           </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium border border-purple-200 dark:border-purple-800 px-2.5 py-1 rounded-lg transition-colors">
-            <Sparkles className="h-3 w-3" />
-            Run AI Analysis
-          </button>
-          <button className="text-slate-400 dark:text-purple-500 hover:text-slate-600 dark:hover:text-purple-300">
-            <Download className="h-4 w-4" />
-          </button>
         </div>
       </div>
 

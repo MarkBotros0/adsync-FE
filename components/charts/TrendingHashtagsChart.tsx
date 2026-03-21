@@ -1,6 +1,5 @@
 'use client';
 
-import { Download } from 'lucide-react';
 import { TRENDING_HASHTAGS } from '@/lib/mock-data';
 import type { TrendingHashtag } from '@/lib/types';
 
@@ -18,20 +17,14 @@ export function TrendingHashtagsChart({ data }: { data?: TrendingHashtag[] }) {
     <div className="bg-white dark:bg-dk-surface rounded-xl border border-slate-200 dark:border-dk-border overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-dk-border">
         <h3 className="text-sm font-semibold text-slate-800 dark:text-purple-100">Trending Hashtags</h3>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-purple-400">
+        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-purple-400">
             <span className="flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-green-400 inline-block" /> Positive
             </span>
             <span className="flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-red-400 inline-block" /> Negative
             </span>
-            <button className="text-slate-400 dark:text-purple-500 hover:text-slate-600 dark:hover:text-purple-300 ml-1">Hide sentiment</button>
           </div>
-          <button className="text-slate-400 dark:text-purple-500 hover:text-slate-600 dark:hover:text-purple-300">
-            <Download className="h-4 w-4" />
-          </button>
-        </div>
       </div>
 
       <div className="p-5">

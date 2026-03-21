@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Download, Sparkles } from 'lucide-react';
 import { generateHeatmapData } from '@/lib/mock-data';
 import type { HeatmapCell } from '@/lib/types';
 import { useTheme } from '@/contexts/theme-context';
@@ -48,15 +47,6 @@ export function BestTimeHeatmap({ data: propData }: { data?: HeatmapCell[] }) {
               {peakDay}s at {peakHour}
             </span>
           </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium border border-purple-200 dark:border-purple-800 px-2.5 py-1 rounded-lg transition-colors">
-            <Sparkles className="h-3 w-3" />
-            Run AI Analysis
-          </button>
-          <button className="text-slate-400 dark:text-purple-500 hover:text-slate-600 dark:hover:text-purple-300">
-            <Download className="h-4 w-4" />
-          </button>
         </div>
       </div>
 

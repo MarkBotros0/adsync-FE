@@ -11,7 +11,6 @@ import { BestTimeHeatmap } from '@/components/charts/BestTimeHeatmap';
 import { TrendingHashtagsChart } from '@/components/charts/TrendingHashtagsChart';
 import { useFilters, getDateRange } from '@/contexts/filter-context';
 import { pagesAPI } from '@/lib/api';
-import { Sparkles } from 'lucide-react';
 import type {
   MentionStats,
   VolumeDataPoint,
@@ -156,13 +155,6 @@ function InfluencersByMediaType({ totalFacebookPosts }: { totalFacebookPosts: nu
     <div className="bg-white dark:bg-dk-surface rounded-xl border border-slate-200 dark:border-dk-border overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-dk-border">
         <h3 className="text-sm font-semibold text-slate-800 dark:text-purple-100">Posts by Platform</h3>
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-purple-500 font-medium border border-slate-200 dark:border-dk-border px-2.5 py-1 rounded-lg cursor-not-allowed opacity-60">
-            <Sparkles className="h-3 w-3" />
-            Run AI Analysis
-            <span className="text-[10px] font-semibold bg-slate-200 dark:bg-dk-raised text-slate-400 dark:text-purple-500 px-1 py-0.5 rounded uppercase tracking-wide">Soon</span>
-          </span>
-        </div>
       </div>
       <div className="p-5">
         <div className="flex items-end justify-center gap-4 h-40">
