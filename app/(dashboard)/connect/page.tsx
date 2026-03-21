@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { authAPI, facebookSessionAPI } from '@/lib/api';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
@@ -228,6 +228,7 @@ function PlatformCard({
 export default function ConnectPage() {
   const auth = useBrandAuthContext();
   const searchParams = useSearchParams();
+  const toastedRef = useRef(false);
 
   const [statuses, setStatuses] = useState<Record<string, ConnectionStatus>>(
     Object.fromEntries(PLATFORMS.map(p => [p.id, { connected: false, loading: p.available }]))
@@ -261,7 +262,8 @@ export default function ConnectPage() {
   // Show success toast if redirected back after connecting
   useEffect(() => {
     const connected = searchParams.get('connected');
-    if (connected === 'facebook') {
+    if (connected === 'facebook' && !toastedRef.current) {
+      toastedRef.current = true;
       toast.success('Facebook connected successfully!');
     }
   }, [searchParams]);

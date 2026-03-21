@@ -12,19 +12,28 @@ import {
 import { INTERACTIONS_DATA } from '@/lib/mock-data';
 import type { InteractionDataPoint } from '@/lib/types';
 import { Download, Sparkles } from 'lucide-react';
+import { useTheme } from '@/contexts/theme-context';
 
 export function InteractionsChart({ data }: { data?: InteractionDataPoint[] }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const chartData = data ?? INTERACTIONS_DATA;
+
+  const gridStroke = isDark ? '#251043' : '#f1f5f9';
+  const tooltipStyle = isDark
+    ? { fontSize: 12, borderRadius: 8, border: '1px solid #3b1f6a', background: '#1a0a2e', color: '#e9d5ff' }
+    : { fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' };
+
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-        <h3 className="text-sm font-semibold text-slate-800">Social Media Interactions</h3>
+    <div className="bg-white dark:bg-dk-surface rounded-xl border border-slate-200 dark:border-dk-border overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-dk-border">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-purple-100">Social Media Interactions</h3>
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-800 font-medium border border-purple-200 px-2.5 py-1 rounded-lg transition-colors">
+          <button className="flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium border border-purple-200 dark:border-purple-800 px-2.5 py-1 rounded-lg transition-colors">
             <Sparkles className="h-3 w-3" />
             Run AI Analysis
           </button>
-          <button className="text-slate-400 hover:text-slate-600">
+          <button className="text-slate-400 dark:text-purple-500 hover:text-slate-600 dark:hover:text-purple-300">
             <Download className="h-4 w-4" />
           </button>
         </div>
@@ -39,7 +48,7 @@ export function InteractionsChart({ data }: { data?: InteractionDataPoint[] }) {
                 <stop offset="95%" stopColor="#7c3aed" stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
             <XAxis
               dataKey="date"
               tick={{ fontSize: 11, fill: '#94a3b8' }}
@@ -53,7 +62,7 @@ export function InteractionsChart({ data }: { data?: InteractionDataPoint[] }) {
               width={25}
             />
             <Tooltip
-              contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
+              contentStyle={tooltipStyle}
               formatter={(v: number | undefined) => [v ?? 0, 'Interactions']}
             />
             <Area
