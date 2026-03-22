@@ -81,6 +81,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [pages, setPages]                     = useState<FacebookPage[]>([]);
   const [selectedPage, setSelectedPage]       = useState<FacebookPage | null>(null);
   const [totalPosts, setTotalPosts]           = useState(0);
+  const [postsByPlatform, setPostsByPlatform] = useState<Partial<Record<MentionPlatform, number>>>({});
   const [selectedPlatforms, setSelectedPlatforms] = useState<MentionPlatform[]>([]);
   const [selectedSentiments, setSelectedSentiments] = useState<Sentiment[]>([]);
   const [selectedEmotions, setSelectedEmotions]     = useState<Emotion[]>([]);
@@ -190,6 +191,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       onPageSelect: handlePageSelect,
       totalPosts,
       setTotalPosts,
+      postsByPlatform,
+      setPostsByPlatform,
     }}>
       <div className="flex h-dvh overflow-hidden bg-slate-50 dark:bg-dk-bg">
         {/* Left sidebar */}

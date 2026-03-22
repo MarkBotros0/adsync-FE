@@ -74,14 +74,14 @@ export function RightPanel({
   onToggleEmotion,
 }: RightPanelProps) {
   const [language] = useState('All Languages');
-  const { selectedPage, totalPosts } = useFilters();
+  const { postsByPlatform } = useFilters();
 
   const ACTIVE_PLATFORMS: MentionPlatform[] = ['facebook', 'instagram', 'tiktok'];
   const SOON_PLATFORMS:   MentionPlatform[] = ['twitter', 'youtube', 'linkedin'];
 
   const platformCounts: PlatformCount[] = ACTIVE_PLATFORMS.map(p => ({
     platform: p,
-    count: p === 'facebook' && selectedPage ? totalPosts : 0,
+    count: postsByPlatform[p] ?? 0,
   }));
   const totalMentions = platformCounts.reduce((s, p) => s + p.count, 0);
 

@@ -81,7 +81,7 @@ function computeStats(mentions: Mention[]): MentionStats {
 }
 
 export default function MentionsPage() {
-  const { selectedPlatforms, selectedSentiments, selectedEmotions, sessionId, igSessionId, igUserId, selectedPage, setTotalPosts, datePreset } = useFilters();
+  const { selectedPlatforms, selectedSentiments, selectedEmotions, sessionId, igSessionId, igUserId, selectedPage, setTotalPosts, setPostsByPlatform, datePreset } = useFilters();
   const [sort, setSort] = useState<SortMode>('recent');
   const [mentions, setMentions] = useState<Mention[]>([]);
   const [stats, setStats] = useState<MentionStats | null>(null);
@@ -118,6 +118,11 @@ export default function MentionsPage() {
       setMentions(results);
       setStats(computeStats(results));
       setTotalPosts(results.length);
+      const counts: Partial<Record<string, number>> = {};
+      for (const m of results) {
+        counts[m.platform] = (counts[m.platform] ?? 0) + 1;
+      }
+      setPostsByPlatform(counts);
     }
   };
 

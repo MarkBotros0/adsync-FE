@@ -45,6 +45,8 @@ export interface FilterCtx {
   onPageSelect: (page: FacebookPage) => void;
   totalPosts: number;
   setTotalPosts: (n: number) => void;
+  postsByPlatform: Partial<Record<MentionPlatform, number>>;
+  setPostsByPlatform: (counts: Partial<Record<MentionPlatform, number>>) => void;
 }
 
 export const FilterContext = createContext<FilterCtx>({
@@ -66,6 +68,8 @@ export const FilterContext = createContext<FilterCtx>({
   onPageSelect: () => {},
   totalPosts: 0,
   setTotalPosts: () => {},
+  postsByPlatform: {},
+  setPostsByPlatform: () => {},
 });
 
 export const useFilters = () => useContext(FilterContext);
