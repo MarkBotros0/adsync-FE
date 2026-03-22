@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { RightPanel } from '@/components/layout/RightPanel';
-import { authAPI, pagesAPI, facebookSessionAPI, instagramSessionAPI } from '@/lib/api';
+import { authAPI, pagesAPI, facebookSessionAPI, instagramSessionAPI, tiktokSessionAPI } from '@/lib/api';
 import type { FacebookPage, MentionPlatform, Sentiment, Emotion } from '@/lib/types';
 import { FilterContext, DATE_PRESETS, type DatePreset } from '@/contexts/filter-context';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
@@ -78,6 +78,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sessionId, setSessionId]             = useState<string | null>(null);
   const [igSessionId, setIgSessionId]         = useState<string | null>(null);
   const [igUserId, setIgUserId]               = useState<string | null>(null);
+  const [ttSessionId, setTtSessionId]         = useState<string | null>(null);
+  const [ttOpenId, setTtOpenId]               = useState<string | null>(null);
   const [pages, setPages]                     = useState<FacebookPage[]>([]);
   const [selectedPage, setSelectedPage]       = useState<FacebookPage | null>(null);
   const [totalPosts, setTotalPosts]           = useState(0);
@@ -106,6 +108,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (res.data.connected && res.data.session_id && res.data.ig_user_id) {
         setIgSessionId(res.data.session_id);
         setIgUserId(res.data.ig_user_id);
+      }
+    }).catch(() => {});
+    tiktokSessionAPI.getSession(auth.token).then(res => {
+      if (res.data.connected && res.data.session_id && res.data.open_id) {
+        setTtSessionId(res.data.session_id);
+        setTtOpenId(res.data.open_id);
       }
     }).catch(() => {});
   }, [auth.token, auth.isLoading]);
@@ -186,6 +194,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       sessionId,
       igSessionId,
       igUserId,
+      ttSessionId,
+      ttOpenId,
       pages,
       selectedPage,
       onPageSelect: handlePageSelect,

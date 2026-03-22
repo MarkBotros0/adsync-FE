@@ -21,6 +21,7 @@ import type {
   FacebookSessionResponse,
   InstagramSessionResponse,
   TikTokSessionResponse,
+  TikTokVideoList,
   BrandRegisterPayload,
   BrandLoginPayload,
 } from './types';
@@ -326,6 +327,23 @@ export const instagramAPI = {
   ): Promise<AxiosResponse<ApiResponse<IGDemographics>>> =>
     api.get<ApiResponse<IGDemographics>>(`/instagram/accounts/${igUserId}/insights/audience`, {
       params: { session_id: sessionId },
+    }),
+};
+
+// ─── TikTok Content API ───────────────────────────────────────────────────────
+
+export const tiktokAPI = {
+  /** Get the connected TikTok account's videos (newest first, paginated). */
+  getVideos: (
+    sessionId: string,
+    options?: { max_count?: number; cursor?: number },
+  ): Promise<AxiosResponse<ApiResponse<TikTokVideoList>>> =>
+    api.get<ApiResponse<TikTokVideoList>>('/tiktok/account/videos', {
+      params: {
+        session_id: sessionId,
+        max_count: options?.max_count,
+        cursor: options?.cursor,
+      },
     }),
 };
 

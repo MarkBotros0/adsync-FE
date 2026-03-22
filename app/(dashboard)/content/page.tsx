@@ -5,8 +5,8 @@ import { RefreshCw } from 'lucide-react';
 import { StatsBar } from '@/components/content/StatsBar';
 import { MentionCard } from '@/components/content/MentionCard';
 import { useFilters, getDateRange } from '@/contexts/filter-context';
-import { pagesAPI, instagramAPI } from '@/lib/api';
-import type { Mention, MentionStats, IGMedia, Post } from '@/lib/types';
+import { pagesAPI, instagramAPI, tiktokAPI } from '@/lib/api';
+import type { Mention, MentionStats, IGMedia, Post, TikTokVideo } from '@/lib/types';
 
 type SortMode = 'recent' | 'popular';
 
@@ -66,6 +66,32 @@ function igMediaToMentions(items: IGMedia[], username: string): Mention[] {
     });
 }
 
+function tiktokVideosToMentions(videos: TikTokVideo[], displayName: string): Mention[] {
+  return videos.map(video => {
+    const interactions = (video.engagement?.likes ?? 0) + (video.engagement?.comments ?? 0) + (video.engagement?.shares ?? 0);
+    const hashtags = (video.title || video.description || '').match(/#\w+/g) ?? [];
+    return {
+      id: video.id,
+      platform: 'tiktok' as const,
+      author: {
+        name: displayName,
+        username: `@${displayName}`,
+        followers: 0,
+      },
+      content: video.description || video.title || '',
+      url: video.share_url || '#',
+      created_at: new Date(video.created_at * 1000).toISOString(),
+      sentiment: 'neutral' as const,
+      reach: video.engagement?.views ?? 0,
+      interactions,
+      performance: Math.min(10, Math.max(1, Math.ceil(interactions / 5))),
+      language: 'en',
+      hashtags: hashtags.length > 0 ? hashtags : undefined,
+      image_url: video.cover_image_url || undefined,
+    };
+  });
+}
+
 function computeStats(mentions: Mention[]): MentionStats {
   const totalInteractions = mentions.reduce((s, m) => s + m.interactions, 0);
   const totalReach = mentions.reduce((s, m) => s + m.reach, 0);
@@ -81,7 +107,7 @@ function computeStats(mentions: Mention[]): MentionStats {
 }
 
 export default function MentionsPage() {
-  const { selectedPlatforms, selectedSentiments, selectedEmotions, sessionId, igSessionId, igUserId, selectedPage, setTotalPosts, setPostsByPlatform, datePreset } = useFilters();
+  const { selectedPlatforms, selectedSentiments, selectedEmotions, sessionId, igSessionId, igUserId, ttSessionId, ttOpenId, selectedPage, setTotalPosts, setPostsByPlatform, datePreset } = useFilters();
   const [sort, setSort] = useState<SortMode>('recent');
   const [mentions, setMentions] = useState<Mention[]>([]);
   const [stats, setStats] = useState<MentionStats | null>(null);
@@ -114,6 +140,18 @@ export default function MentionsPage() {
       }
     }
 
+    // TikTok videos
+    if (ttSessionId) {
+      try {
+        const res = await tiktokAPI.getVideos(ttSessionId, { max_count: 20 });
+        const videos = res.data.data?.videos ?? [];
+        const displayName = res.data.data?.display_name ?? ttOpenId ?? 'TikTok';
+        results.push(...tiktokVideosToMentions(videos, displayName));
+      } catch {
+        // Silent fail — page continues with partial data from other platforms
+      }
+    }
+
     if (results.length > 0) {
       setMentions(results);
       setStats(computeStats(results));
@@ -127,10 +165,10 @@ export default function MentionsPage() {
   };
 
   useEffect(() => {
-    if (!sessionId && !igSessionId) return;
+    if (!sessionId && !igSessionId && !ttSessionId) return;
     setLoading(true);
     fetchAllContent().finally(() => setLoading(false));
-  }, [sessionId, selectedPage, igSessionId, igUserId]);
+  }, [sessionId, selectedPage, igSessionId, igUserId, ttSessionId, ttOpenId]);
 
   const filtered = useMemo(() => {
     let list = [...mentions];
@@ -170,7 +208,8 @@ export default function MentionsPage() {
 
   const sourceLine = [
     selectedPage ? `${selectedPage.name} · Facebook` : null,
-    igUserId ? 'Instagram Reels' : null,
+    igUserId ? 'Instagram' : null,
+    ttOpenId ? 'TikTok' : null,
   ].filter(Boolean).join(' · ') || 'Demo data';
 
   const emptyStats: MentionStats = {

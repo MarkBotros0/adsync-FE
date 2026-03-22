@@ -442,6 +442,38 @@ export interface IGComment {
   replies?: IGComment[];
 }
 
+// ─── TikTok Types ─────────────────────────────────────────────────────────────
+
+export interface TikTokVideoEngagement {
+  likes: number;
+  comments: number;
+  shares: number;
+  views: number;
+  total: number;
+}
+
+export interface TikTokVideo {
+  id: string;
+  title: string;
+  description: string;
+  created_at: number; // Unix timestamp (seconds)
+  cover_image_url: string;
+  share_url: string;
+  duration: number;
+  dimensions: { height: number; width: number };
+  engagement: TikTokVideoEngagement;
+  embed_html: string;
+  embed_link: string;
+}
+
+export interface TikTokVideoList {
+  open_id: string;
+  display_name: string;
+  total: number;
+  videos: TikTokVideo[];
+  paging: { cursor: number | null; has_more: boolean };
+}
+
 // ─── API Request / Response Types ─────────────────────────────────────────────
 
 /** Response returned by GET /facebook/auth/login and GET /instagram/auth/connect. */

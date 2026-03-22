@@ -40,6 +40,8 @@ export interface FilterCtx {
   sessionId: string | null;
   igSessionId: string | null;
   igUserId: string | null;
+  ttSessionId: string | null;
+  ttOpenId: string | null;
   pages: FacebookPage[];
   selectedPage: FacebookPage | null;
   onPageSelect: (page: FacebookPage) => void;
@@ -63,6 +65,8 @@ export const FilterContext = createContext<FilterCtx>({
   sessionId: null,
   igSessionId: null,
   igUserId: null,
+  ttSessionId: null,
+  ttOpenId: null,
   pages: [],
   selectedPage: null,
   onPageSelect: () => {},
