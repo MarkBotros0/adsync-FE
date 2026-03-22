@@ -2,9 +2,10 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import type { Post } from '@/lib/types';
 
 interface EngagementOverviewChartProps {
-  posts: any[];
+  posts: Post[];
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b'];

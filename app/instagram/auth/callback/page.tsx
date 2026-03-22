@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { oauthCallbackAPI } from '@/lib/api';
+import { AxiosError } from 'axios';
 
 export default function InstagramCallbackPage() {
   const searchParams = useSearchParams();
@@ -14,40 +16,26 @@ export default function InstagramCallbackPage() {
       const error = searchParams.get('error');
 
       if (error) {
-        console.error('Instagram auth error:', error);
         router.push('/connect?error=' + encodeURIComponent(error));
         return;
       }
 
       if (!code || !state) {
-        console.error('Missing code or state parameter');
         router.push('/connect?error=missing_parameters');
         return;
       }
 
       try {
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const response = await fetch(
-          `${backendUrl}/instagram/auth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-          console.error('Backend error:', errorData);
-          router.push('/connect?error=' + encodeURIComponent(errorData.detail || 'auth_failed'));
-          return;
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
+        const response = await oauthCallbackAPI.instagramCallback(code, state);
+        if (response.data.success) {
           router.push('/connect?connected=instagram');
         } else {
           router.push('/connect?error=no_session');
         }
       } catch (err) {
-        console.error('Error during Instagram callback:', err);
-        router.push('/connect?error=callback_failed');
+        const axiosError = err as AxiosError<{ detail?: string }>;
+        const detail = axiosError.response?.data?.detail ?? 'auth_failed';
+        router.push('/connect?error=' + encodeURIComponent(detail));
       }
     };
 

@@ -299,7 +299,6 @@ export default function ConnectPage() {
         window.location.href = res.data.login_url;
       } catch (err: unknown) {
         const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-        console.error('[Facebook connect]', err);
         toast.error(detail ?? 'Failed to initiate Facebook connection');
       }
     } else if (platformId === 'instagram') {
@@ -308,7 +307,6 @@ export default function ConnectPage() {
         window.location.href = res.data.login_url;
       } catch (err: unknown) {
         const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-        console.error('[Instagram connect]', err);
         toast.error(detail ?? 'Failed to initiate Instagram connection');
       }
     }

@@ -16,6 +16,12 @@ import type {
   IGDemographics,
   IGMedia,
   IGComment,
+  OAuthLoginResponse,
+  OAuthCallbackResponse,
+  FacebookSessionResponse,
+  InstagramSessionResponse,
+  BrandRegisterPayload,
+  BrandLoginPayload,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -27,51 +33,26 @@ const api = axios.create({
   },
 });
 
-// Auth API types
-interface LoginResponse {
-  login_url: string;
-  message: string;
-}
-
-interface LogoutResponse {
-  success: boolean;
-  message: string;
-}
-
 // Auth endpoints (legacy + brand-linked)
 export const authAPI = {
   /** Initiate Facebook OAuth. Pass brand JWT to link the session to the brand. */
-  login: (brandToken?: string): Promise<AxiosResponse<LoginResponse>> =>
-    api.get<LoginResponse>('/facebook/auth/login', brandToken
+  login: (brandToken?: string): Promise<AxiosResponse<OAuthLoginResponse>> =>
+    api.get<OAuthLoginResponse>('/facebook/auth/login', brandToken
       ? { headers: { Authorization: `Bearer ${brandToken}` } }
       : undefined),
 
   checkStatus: (sessionId: string): Promise<AxiosResponse<AuthStatus>> =>
     api.get<AuthStatus>(`/facebook/auth/status/${sessionId}`),
 
-  logout: (sessionId: string): Promise<AxiosResponse<LogoutResponse>> =>
-    api.post<LogoutResponse>(`/facebook/auth/logout/${sessionId}`),
+  logout: (sessionId: string): Promise<AxiosResponse<{ success: boolean; message: string }>> =>
+    api.post<{ success: boolean; message: string }>(`/facebook/auth/logout/${sessionId}`),
 };
-
-interface FacebookSessionResponse {
-  connected: boolean;
-  session_id: string | null;
-  user_name: string | null;
-  user_id?: string | null;
-}
-
-interface InstagramSessionResponse {
-  connected: boolean;
-  session_id: string | null;
-  ig_user_id: string | null;
-  username: string | null;
-}
 
 /** Brand-linked Instagram session management (requires brand JWT). */
 export const instagramSessionAPI = {
   /** Initiate Instagram Business Login. Pass brand JWT to link the session. */
-  connect: (brandToken: string): Promise<AxiosResponse<LoginResponse>> =>
-    api.get<LoginResponse>('/instagram/auth/connect', {
+  connect: (brandToken: string): Promise<AxiosResponse<OAuthLoginResponse>> =>
+    api.get<OAuthLoginResponse>('/instagram/auth/connect', {
       headers: { Authorization: `Bearer ${brandToken}` },
     }),
 
@@ -142,21 +123,6 @@ export const insightsAPI = {
 };
 
 // ─── Brand Auth API ───────────────────────────────────────────────────────────
-
-interface BrandRegisterPayload {
-  name: string;
-  email: string;
-  password: string;
-  subscription_name?: string;
-  logo_url?: string;
-  website?: string;
-  industry?: string;
-}
-
-interface BrandLoginPayload {
-  email: string;
-  password: string;
-}
 
 function _brandAuthHeaders(token: string) {
   return { Authorization: `Bearer ${token}` };
@@ -339,6 +305,18 @@ export const instagramAPI = {
     api.get<ApiResponse<IGDemographics>>(`/instagram/accounts/${igUserId}/insights/audience`, {
       params: { session_id: sessionId },
     }),
+};
+
+// ─── OAuth Callback API ───────────────────────────────────────────────────────
+
+export const oauthCallbackAPI = {
+  /** Forward the Facebook OAuth callback code+state to the backend. */
+  facebookCallback: (code: string, state: string): Promise<AxiosResponse<OAuthCallbackResponse>> =>
+    api.get<OAuthCallbackResponse>('/facebook/auth/callback', { params: { code, state } }),
+
+  /** Forward the Instagram OAuth callback code+state to the backend. */
+  instagramCallback: (code: string, state: string): Promise<AxiosResponse<OAuthCallbackResponse>> =>
+    api.get<OAuthCallbackResponse>('/instagram/auth/callback', { params: { code, state } }),
 };
 
 export default api;

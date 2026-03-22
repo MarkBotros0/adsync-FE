@@ -2,9 +2,10 @@
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import type { Post } from '@/lib/types';
 
 interface EngagementRateChartProps {
-  posts: any[];
+  posts: Post[];
   totalFollowers: number;
 }
 
@@ -56,7 +57,7 @@ export function EngagementRateChart({ posts, totalFollowers }: EngagementRateCha
                 borderRadius: '8px',
                 padding: '12px'
               }}
-              formatter={(value: any) => [`${value}%`, 'Engagement Rate']}
+              formatter={(value: number | undefined) => [`${value ?? 0}%`, 'Engagement Rate']}
             />
             <Bar dataKey="rate" radius={[8, 8, 0, 0]}>
               {chartData.map((entry, index) => (

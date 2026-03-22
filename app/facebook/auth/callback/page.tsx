@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { oauthCallbackAPI } from '@/lib/api';
+import { AxiosError } from 'axios';
 
 export default function FacebookCallbackPage() {
   const searchParams = useSearchParams();
@@ -14,41 +16,26 @@ export default function FacebookCallbackPage() {
       const error = searchParams.get('error');
 
       if (error) {
-        console.error('Facebook auth error:', error);
         router.push('/login?error=' + encodeURIComponent(error));
         return;
       }
 
       if (!code || !state) {
-        console.error('Missing code or state parameter');
         router.push('/login?error=missing_parameters');
         return;
       }
 
       try {
-        // Forward the callback to your backend
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const response = await fetch(
-          `${backendUrl}/facebook/auth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-          console.error('Backend error:', errorData);
-          router.push('/login?error=' + encodeURIComponent(errorData.detail || 'auth_failed'));
-          return;
-        }
-
-        const data = await response.json();
-        
-        if (data.success && data.session_id) {
+        const response = await oauthCallbackAPI.facebookCallback(code, state);
+        if (response.data.success && response.data.session_id) {
           router.push('/connect?connected=facebook');
         } else {
           router.push('/login?error=no_session');
         }
       } catch (err) {
-        console.error('Error during callback:', err);
-        router.push('/login?error=callback_failed');
+        const axiosError = err as AxiosError<{ detail?: string }>;
+        const detail = axiosError.response?.data?.detail ?? 'auth_failed';
+        router.push('/login?error=' + encodeURIComponent(detail));
       }
     };
 

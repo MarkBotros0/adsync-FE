@@ -2,9 +2,10 @@
 
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import type { Post } from '@/lib/types';
 
 interface PostPerformanceChartProps {
-  posts: any[];
+  posts: Post[];
 }
 
 export function PostPerformanceChart({ posts }: PostPerformanceChartProps) {

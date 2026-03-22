@@ -3,10 +3,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { pagesAPI } from '@/lib/api';
-import type { 
-  FacebookPage, 
-  PageInsights, 
+import type {
+  FacebookPage,
+  PageInsights,
   Post,
+  ApiResponse,
+  PostsResponse,
 } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ModernTable } from '@/components/modern/ModernTable';
@@ -18,15 +20,30 @@ import { EngagementRateChart } from '@/components/charts/EngagementRateChart';
 import { PostPerformanceChart } from '@/components/charts/PostPerformanceChart';
 import { EngagementTypeChart } from '@/components/charts/EngagementTypeChart';
 import { Button } from '@/components/ui/Button';
-import { 
-  Users as UsersIcon, 
-  Eye as EyeIcon, 
-  Heart as HeartIcon, 
+import {
+  Users as UsersIcon,
+  Eye as EyeIcon,
+  Heart as HeartIcon,
   TrendingUp as ArrowTrendingUpIcon,
   Download as DownloadIcon,
 } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import { Toaster, toast } from 'sonner';
+
+/** Shape returned by /facebook/pages/{id}/insights — flat, not nested under metrics. */
+interface RawFacebookInsights {
+  page_id?: string;
+  page_name?: string;
+  followers_count?: number;
+  fan_count?: number;
+  overall_star_rating?: number;
+  rating_count?: number;
+  category?: string;
+  link?: string;
+  website?: string;
+  about?: string;
+  phone?: string;
+}
 
 export default function DashboardPage() {
   const searchParams = useSearchParams();
@@ -37,20 +54,16 @@ export default function DashboardPage() {
   const [selectedPage, setSelectedPage] = useState<FacebookPage | null>(null);
   const [pageInsights, setPageInsights] = useState<PageInsights | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
-  const [rawInsightsData, setRawInsightsData] = useState<any>(null);
-  const [rawPostsData, setRawPostsData] = useState<any>(null);
+  const [rawInsightsData, setRawInsightsData] = useState<ApiResponse<RawFacebookInsights> | null>(null);
+  const [rawPostsData, setRawPostsData] = useState<PostsResponse | null>(null);
 
-  const exportBackendData = () => {
+  const exportBackendData = useCallback(() => {
     const data = {
       insights: rawInsightsData,
       posts: rawPostsData,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
-    console.log('=== BACKEND DATA EXPORT ===');
-    console.log(JSON.stringify(data, null, 2));
-    console.log('=== END EXPORT ===');
-    
-    // Also download as JSON file
+
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -58,14 +71,34 @@ export default function DashboardPage() {
     a.download = `backend-data-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    
-    toast.success('Backend data exported to console and downloaded!');
-  };
+
+    toast.success('Backend data downloaded as JSON');
+  }, [rawInsightsData, rawPostsData]);
+
+  const loadPages = useCallback(async (session: string): Promise<void> => {
+    try {
+      setLoading(true);
+      const response = await pagesAPI.getPages(session);
+      const pagesData = response.data.pages || [];
+      setPages(pagesData);
+
+      if (pagesData.length > 0) {
+        setSelectedPage(pagesData[0]);
+        toast.success('Connected successfully!');
+      } else {
+        toast.error('No Facebook pages found');
+      }
+    } catch {
+      toast.error('Failed to load pages');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const session = searchParams.get('session_id');
     const storedSession = sessionStorage.getItem('session_id');
-    
+
     if (session) {
       sessionStorage.setItem('session_id', session);
       setSessionId(session);
@@ -76,96 +109,49 @@ export default function DashboardPage() {
     } else {
       router.push('/');
     }
-  }, [searchParams, router]);
-
-  const loadPages = async (session: string): Promise<void> => {
-    try {
-      setLoading(true);
-      console.log('Loading pages with session:', session);
-      
-      const response = await pagesAPI.getPages(session);
-      console.log('Pages response:', response.data);
-      
-      const pagesData = response.data.pages || [];
-      setPages(pagesData);
-      
-      console.log('Found pages:', pagesData.length);
-      
-      if (pagesData.length > 0) {
-        setSelectedPage(pagesData[0]);
-        console.log('Selected page:', pagesData[0]);
-        toast.success('Connected successfully!');
-      } else {
-        toast.error('No Facebook pages found');
-      }
-    } catch (err) {
-      console.error('Error loading pages:', err);
-      toast.error('Failed to load pages');
-      console.error('Failed to load pages:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [searchParams, router, loadPages]);
 
   const loadPageData = useCallback(async (): Promise<void> => {
     if (!selectedPage || !sessionId) return;
 
     try {
-      console.log('Loading page data for:', selectedPage.name, selectedPage.id);
-      
       const [insightsRes, postsRes] = await Promise.all([
         pagesAPI.getPageInsights(selectedPage.id, sessionId, selectedPage.access_token),
         pagesAPI.getPagePosts(selectedPage.id, sessionId, 25, selectedPage.access_token),
       ]);
 
-      console.log('Insights response:', insightsRes.data);
-      console.log('Posts response:', postsRes.data);
-
-      // Store raw data for export
-      setRawInsightsData(insightsRes.data);
+      setRawInsightsData(insightsRes.data as ApiResponse<RawFacebookInsights>);
       setRawPostsData(postsRes.data);
 
-      const insightsData = insightsRes.data.data || insightsRes.data;
-      
-      // Transform the data to match the expected structure
+      const insightsData: RawFacebookInsights = (insightsRes.data.data ?? insightsRes.data) as RawFacebookInsights;
+
       const transformedInsights: PageInsights = {
-        page_id: (insightsData as any).page_id,
-        page_name: (insightsData as any).page_name,
+        page_id: insightsData.page_id ?? '',
+        page_name: insightsData.page_name ?? '',
         metrics: {
-          followers_count: (insightsData as any).followers_count || 0,
-          fan_count: (insightsData as any).fan_count || 0,
-          rating: (insightsData as any).overall_star_rating || 0,
-          rating_count: (insightsData as any).rating_count || 0,
+          followers_count: insightsData.followers_count ?? 0,
+          fan_count: insightsData.fan_count ?? 0,
+          rating: insightsData.overall_star_rating ?? 0,
+          rating_count: insightsData.rating_count ?? 0,
         },
         page_info: {
-          category: (insightsData as any).category || '',
-          link: (insightsData as any).link || '',
-          website: (insightsData as any).website || '',
-          about: (insightsData as any).about || '',
-          phone: (insightsData as any).phone || '',
-        }
+          category: insightsData.category ?? '',
+          link: insightsData.link ?? '',
+          website: insightsData.website ?? '',
+          about: insightsData.about ?? '',
+          phone: insightsData.phone ?? '',
+        },
       };
-      
-      // Transform posts - use real engagement data from backend
-      const transformedPosts = (postsRes.data.posts || []).map((post: any) => ({
+
+      const transformedPosts: Post[] = (postsRes.data.posts || []).map((post: Post) => ({
         ...post,
-        engagement: post.engagement || {
-          likes: 0,
-          comments: 0,
-          shares: 0,
-          total: 0
-        }
+        engagement: post.engagement ?? { likes: 0, comments: 0, shares: 0, total: 0 },
       }));
-      
+
       setPageInsights(transformedInsights);
       setPosts(transformedPosts);
-      
-      console.log('Transformed insights:', transformedInsights);
-      console.log('Transformed posts:', transformedPosts);
-    } catch (err) {
-      console.error('Error loading page data:', err);
+    } catch {
       toast.error('Failed to load page data');
-      console.error('Failed to load page data:', err);
     }
   }, [selectedPage, sessionId]);
 
@@ -192,7 +178,7 @@ export default function DashboardPage() {
   return (
     <>
       <Toaster position="top-center" richColors />
-      
+
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -200,7 +186,7 @@ export default function DashboardPage() {
             <p className="text-slate-600">Overview of your social media performance</p>
           </div>
           {rawInsightsData && (
-            <Button 
+            <Button
               onClick={exportBackendData}
               variant="outline"
               className="flex items-center gap-2"
@@ -211,7 +197,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Debug info */}
         {!pageInsights && selectedPage && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
@@ -304,7 +289,6 @@ export default function DashboardPage() {
               </Card>
             </div>
 
-            {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <PageMetricsChart metrics={pageInsights.metrics} />
               {posts.length > 0 && <EngagementOverviewChart posts={posts} />}
@@ -313,12 +297,12 @@ export default function DashboardPage() {
             {posts.length > 0 && (
               <>
                 <PostEngagementChart posts={posts} />
-                
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <EngagementTrendChart posts={posts} />
-                  <EngagementRateChart 
-                    posts={posts} 
-                    totalFollowers={pageInsights.metrics.followers_count} 
+                  <EngagementRateChart
+                    posts={posts}
+                    totalFollowers={pageInsights.metrics.followers_count}
                   />
                 </div>
 

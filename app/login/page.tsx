@@ -8,8 +8,14 @@ import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 import { BarChart3, Eye, EyeOff, Loader2, Check, ArrowLeft, TrendingUp, Shield, Zap } from 'lucide-react';
 import { toast } from 'sonner';
+import { AxiosError } from 'axios';
 import type { Subscription } from '@/lib/types';
 import { cn } from '@/lib/utils';
+
+function getApiErrorMessage(err: unknown, fallback: string): string {
+  const axiosErr = err as AxiosError<{ detail?: string }>;
+  return axiosErr?.response?.data?.detail ?? fallback;
+}
 
 // ─── Field ────────────────────────────────────────────────────────────────────
 
@@ -144,8 +150,8 @@ export default function LoginPage() {
       await auth.login(loginEmail, loginPassword);
       toast.success('Welcome back!');
       router.push('/content');
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Login failed. Check your credentials.');
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Login failed. Check your credentials.'));
     } finally {
       setLoading(false);
     }
@@ -160,8 +166,8 @@ export default function LoginPage() {
       await auth.register({ name: signupName, email: signupEmail, password: signupPassword, subscription_name: signupPlan });
       toast.success(`Welcome to AdSync, ${signupName}!`);
       router.push('/content');
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Registration failed. Please try again.');
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Registration failed. Please try again.'));
     } finally {
       setLoading(false);
     }

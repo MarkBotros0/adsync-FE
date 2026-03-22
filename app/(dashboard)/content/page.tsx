@@ -97,8 +97,8 @@ export default function MentionsPage() {
         const res = await pagesAPI.getPagePosts(selectedPage.id, sessionId, 50, selectedPage.access_token);
         const posts = res.data.posts ?? [];
         results.push(...postsToMentions(posts, selectedPage.name));
-      } catch (err) {
-        console.error('Failed to fetch Facebook posts:', err);
+      } catch {
+        // Silent fail — page continues with partial data from other platforms
       }
     }
 
@@ -109,8 +109,8 @@ export default function MentionsPage() {
         const items = res.data.data?.media ?? [];
         const username = items[0]?.username ?? igUserId;
         results.push(...igMediaToMentions(items, username));
-      } catch (err) {
-        console.error('Failed to fetch Instagram media:', err);
+      } catch {
+        // Silent fail — page continues with partial data from other platforms
       }
     }
 

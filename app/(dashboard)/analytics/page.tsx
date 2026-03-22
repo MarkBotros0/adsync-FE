@@ -12,6 +12,7 @@ import { TrendingHashtagsChart } from '@/components/charts/TrendingHashtagsChart
 import { useFilters, getDateRange } from '@/contexts/filter-context';
 import { pagesAPI } from '@/lib/api';
 import type {
+  Post,
   MentionStats,
   VolumeDataPoint,
   InteractionDataPoint,
@@ -28,7 +29,7 @@ function formatDate(isoString: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function postsToVolumeData(posts: any[]): VolumeDataPoint[] {
+function postsToVolumeData(posts: Post[]): VolumeDataPoint[] {
   const byDate: Record<string, { mentions: number; reach: number }> = {};
   posts.forEach(post => {
     const date = formatDate(post.created_time);
@@ -41,7 +42,7 @@ function postsToVolumeData(posts: any[]): VolumeDataPoint[] {
     .map(([date, v]) => ({ date, ...v }));
 }
 
-function postsToInteractionsData(posts: any[]): InteractionDataPoint[] {
+function postsToInteractionsData(posts: Post[]): InteractionDataPoint[] {
   const byDate: Record<string, number> = {};
   posts.forEach(post => {
     const date = formatDate(post.created_time);
@@ -52,7 +53,7 @@ function postsToInteractionsData(posts: any[]): InteractionDataPoint[] {
     .map(([date, interactions]) => ({ date, interactions }));
 }
 
-function postsToSentimentData(posts: any[]): SentimentDataPoint[] {
+function postsToSentimentData(posts: Post[]): SentimentDataPoint[] {
   const byDate: Record<string, { positive: number; negative: number; neutral: number }> = {};
   posts.forEach(post => {
     const date = formatDate(post.created_time);
@@ -74,7 +75,7 @@ const STOPWORDS = new Set([
   'its','re','ve','ll','am','im','dont','cant','wont','isnt','arent','wasnt','here',
 ]);
 
-function extractKeywords(posts: any[]): TrendingConversation[] {
+function extractKeywords(posts: Post[]): TrendingConversation[] {
   const counts: Record<string, number> = {};
   posts.forEach(post => {
     const words = (post.message || '')
@@ -94,7 +95,7 @@ function extractKeywords(posts: any[]): TrendingConversation[] {
     .map(([phrase, count]) => ({ phrase, count, sentiment: 'neutral' as const }));
 }
 
-function extractHashtags(posts: any[]): TrendingHashtag[] {
+function extractHashtags(posts: Post[]): TrendingHashtag[] {
   const counts: Record<string, number> = {};
   posts.forEach(post => {
     const tags = (post.message || '').match(/#\w+/g) ?? [];
@@ -109,7 +110,7 @@ function extractHashtags(posts: any[]): TrendingHashtag[] {
     .map(([hashtag, count]) => ({ hashtag, count, sentiment: 'neutral' as const }));
 }
 
-function postsToHeatmapData(posts: any[]): HeatmapCell[] {
+function postsToHeatmapData(posts: Post[]): HeatmapCell[] {
   const cells: Record<string, number> = {};
   posts.forEach(post => {
     const d = new Date(post.created_time);
@@ -127,8 +128,8 @@ function postsToHeatmapData(posts: any[]): HeatmapCell[] {
   return result;
 }
 
-function computeStats(posts: any[]): MentionStats {
-  const totalInteractions = posts.reduce((s: number, p: any) => s + (p.engagement?.total ?? 0), 0);
+function computeStats(posts: Post[]): MentionStats {
+  const totalInteractions = posts.reduce((s: number, p: Post) => s + (p.engagement?.total ?? 0), 0);
   return {
     total_mentions: posts.length,
     total_reach: totalInteractions,
@@ -196,7 +197,7 @@ export default function AnalyticsPage() {
     pagesAPI.getPagePosts(selectedPage.id, sessionId, 100, selectedPage.access_token)
       .then(res => {
         const { from, to } = getDateRange(datePreset);
-        const posts = (res.data.posts ?? []).filter((p: any) => {
+        const posts = (res.data.posts ?? []).filter((p: Post) => {
           const d = new Date(p.created_time);
           if (from && d < from) return false;
           if (to   && d > to)   return false;
@@ -214,7 +215,7 @@ export default function AnalyticsPage() {
         if (keywords.length > 0) setConversationsData(keywords);
         setHeatmapData(postsToHeatmapData(posts));
       })
-      .catch(err => console.error('Failed to fetch posts for analytics:', err))
+      .catch(() => { /* analytics silently degrades if posts unavailable */ })
       .finally(() => setLoading(false));
   }, [sessionId, selectedPage, datePreset]);
 

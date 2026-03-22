@@ -441,3 +441,46 @@ export interface IGComment {
   like_count?: number;
   replies?: IGComment[];
 }
+
+// ─── API Request / Response Types ─────────────────────────────────────────────
+
+/** Response returned by GET /facebook/auth/login and GET /instagram/auth/connect. */
+export interface OAuthLoginResponse {
+  login_url: string;
+  message: string;
+}
+
+/** Response returned by GET /facebook/auth/callback and GET /instagram/auth/callback. */
+export interface OAuthCallbackResponse {
+  success: boolean;
+  session_id?: string;
+}
+
+export interface FacebookSessionResponse {
+  connected: boolean;
+  session_id: string | null;
+  user_name: string | null;
+  user_id?: string | null;
+}
+
+export interface InstagramSessionResponse {
+  connected: boolean;
+  session_id: string | null;
+  ig_user_id: string | null;
+  username: string | null;
+}
+
+export interface BrandRegisterPayload {
+  name: string;
+  email: string;
+  password: string;
+  subscription_name?: string;
+  logo_url?: string;
+  website?: string;
+  industry?: string;
+}
+
+export interface BrandLoginPayload {
+  email: string;
+  password: string;
+}

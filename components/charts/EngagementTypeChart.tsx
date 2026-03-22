@@ -3,9 +3,10 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { format } from 'date-fns';
+import type { Post } from '@/lib/types';
 
 interface EngagementTypeChartProps {
-  posts: any[];
+  posts: Post[];
 }
 
 export function EngagementTypeChart({ posts }: EngagementTypeChartProps) {

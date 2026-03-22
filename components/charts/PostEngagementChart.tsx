@@ -2,9 +2,10 @@
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import type { Post } from '@/lib/types';
 
 interface PostEngagementChartProps {
-  posts: any[];
+  posts: Post[];
 }
 
 export function PostEngagementChart({ posts }: PostEngagementChartProps) {
