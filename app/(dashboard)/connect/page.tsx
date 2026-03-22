@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { authAPI, facebookSessionAPI, instagramSessionAPI } from '@/lib/api';
+import { authAPI, facebookSessionAPI, instagramSessionAPI, tiktokSessionAPI } from '@/lib/api';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
 import { Loader2, CheckCircle2, Circle, ExternalLink, Unplug } from 'lucide-react';
 import { toast } from 'sonner';
@@ -93,7 +93,7 @@ const PLATFORMS: PlatformDef[] = [
     bg: 'bg-cyan-500/10',
     ring: 'ring-cyan-500/40',
     icon: <TikTokIcon className="h-7 w-7" />,
-    available: false,
+    available: true,
   },
   {
     id: 'linkedin',
@@ -243,6 +243,7 @@ export default function ConnectPage() {
         ...prev,
         facebook: { connected: false, loading: false },
         instagram: { connected: false, loading: false },
+        tiktok: { connected: false, loading: false },
       }));
       return;
     }
@@ -276,12 +277,27 @@ export default function ConnectPage() {
       .catch(() => {
         setStatuses(prev => ({ ...prev, instagram: { connected: false, loading: false } }));
       });
+
+    tiktokSessionAPI.getSession(auth.token)
+      .then(res => {
+        setStatuses(prev => ({
+          ...prev,
+          tiktok: {
+            connected: res.data.connected,
+            user_name: res.data.display_name,
+            loading: false,
+          },
+        }));
+      })
+      .catch(() => {
+        setStatuses(prev => ({ ...prev, tiktok: { connected: false, loading: false } }));
+      });
   }, [auth.token, auth.isLoading]);
 
   // Show success toast if redirected back after connecting
   useEffect(() => {
     const connected = searchParams.get('connected');
-    if ((connected === 'facebook' || connected === 'instagram') && !toastedRef.current) {
+    if ((connected === 'facebook' || connected === 'instagram' || connected === 'tiktok') && !toastedRef.current) {
       toastedRef.current = true;
       toast.success(`${connected.charAt(0).toUpperCase() + connected.slice(1)} connected successfully!`);
     }
@@ -309,6 +325,14 @@ export default function ConnectPage() {
         const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
         toast.error(detail ?? 'Failed to initiate Instagram connection');
       }
+    } else if (platformId === 'tiktok') {
+      try {
+        const res = await tiktokSessionAPI.connect(auth.token);
+        window.location.href = res.data.login_url;
+      } catch (err: unknown) {
+        const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+        toast.error(detail ?? 'Failed to initiate TikTok connection');
+      }
     }
   };
 
@@ -334,6 +358,16 @@ export default function ConnectPage() {
       } catch {
         toast.error('Failed to disconnect Instagram');
         setStatuses(prev => ({ ...prev, instagram: { ...prev.instagram, loading: false } }));
+      }
+    } else if (platformId === 'tiktok') {
+      setStatuses(prev => ({ ...prev, tiktok: { ...prev.tiktok, loading: true } }));
+      try {
+        await tiktokSessionAPI.disconnect(auth.token);
+        setStatuses(prev => ({ ...prev, tiktok: { connected: false, loading: false } }));
+        toast.success('TikTok disconnected');
+      } catch {
+        toast.error('Failed to disconnect TikTok');
+        setStatuses(prev => ({ ...prev, tiktok: { ...prev.tiktok, loading: false } }));
       }
     }
   };

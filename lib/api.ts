@@ -20,6 +20,7 @@ import type {
   OAuthCallbackResponse,
   FacebookSessionResponse,
   InstagramSessionResponse,
+  TikTokSessionResponse,
   BrandRegisterPayload,
   BrandLoginPayload,
 } from './types';
@@ -65,6 +66,27 @@ export const instagramSessionAPI = {
   /** Disconnect the Instagram account from the brand. */
   disconnect: (brandToken: string): Promise<AxiosResponse<{ success: boolean; message: string }>> =>
     api.delete('/instagram/auth/disconnect', {
+      headers: { Authorization: `Bearer ${brandToken}` },
+    }),
+};
+
+/** Brand-linked TikTok session management (requires brand JWT). */
+export const tiktokSessionAPI = {
+  /** Initiate TikTok Login Kit OAuth. Pass brand JWT to link the session to the brand. */
+  connect: (brandToken: string): Promise<AxiosResponse<OAuthLoginResponse>> =>
+    api.get<OAuthLoginResponse>('/tiktok/auth/connect', {
+      headers: { Authorization: `Bearer ${brandToken}` },
+    }),
+
+  /** Get the TikTok session linked to the authenticated brand. */
+  getSession: (brandToken: string): Promise<AxiosResponse<TikTokSessionResponse>> =>
+    api.get<TikTokSessionResponse>('/tiktok/auth/session', {
+      headers: { Authorization: `Bearer ${brandToken}` },
+    }),
+
+  /** Disconnect the TikTok account from the brand. */
+  disconnect: (brandToken: string): Promise<AxiosResponse<{ success: boolean; message: string }>> =>
+    api.delete('/tiktok/auth/disconnect', {
       headers: { Authorization: `Bearer ${brandToken}` },
     }),
 };
@@ -317,6 +339,10 @@ export const oauthCallbackAPI = {
   /** Forward the Instagram OAuth callback code+state to the backend. */
   instagramCallback: (code: string, state: string): Promise<AxiosResponse<OAuthCallbackResponse>> =>
     api.get<OAuthCallbackResponse>('/instagram/auth/callback', { params: { code, state } }),
+
+  /** Forward the TikTok OAuth callback code+state to the backend. */
+  tiktokCallback: (code: string, state: string): Promise<AxiosResponse<OAuthCallbackResponse>> =>
+    api.get<OAuthCallbackResponse>('/tiktok/auth/callback', { params: { code, state } }),
 };
 
 export default api;

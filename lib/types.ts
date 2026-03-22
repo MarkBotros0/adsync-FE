@@ -470,6 +470,13 @@ export interface InstagramSessionResponse {
   username: string | null;
 }
 
+export interface TikTokSessionResponse {
+  connected: boolean;
+  session_id: string | null;
+  open_id: string | null;
+  display_name: string | null;
+}
+
 export interface BrandRegisterPayload {
   name: string;
   email: string;
