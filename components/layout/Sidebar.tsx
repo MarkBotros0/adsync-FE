@@ -63,31 +63,31 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen, onLogout, pages = [], s
           lg:translate-x-0 lg:static lg:z-auto
           w-64 ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        style={{ background: 'linear-gradient(180deg, #1a0a2e 0%, #16092a 100%)' }}
+        style={{ background: 'linear-gradient(180deg, #15151d 0%, #0e0e13 100%)' }}
       >
         {/* Mobile close */}
         <button
-          className="lg:hidden absolute top-4 right-4 text-purple-300 hover:text-white"
+          className="lg:hidden absolute top-4 right-4 text-slate-400 hover:text-white"
           onClick={() => setIsMobileOpen(false)}
         >
           <X className="h-5 w-5" />
         </button>
 
         {/* Brand selector */}
-        <div className={`px-4 pt-5 pb-3 border-b border-purple-900/50 ${isCollapsed ? 'lg:px-2' : ''}`}>
+        <div className={`px-4 pt-5 pb-3 border-b border-white/8 ${isCollapsed ? 'lg:px-2' : ''}`}>
           <div className={`flex items-center gap-3 ${isCollapsed ? 'lg:justify-center' : ''}`}>
             <div className={`flex-1 min-w-0 ${isCollapsed ? 'lg:flex-none' : ''}`}>
               {selectedPage ? (
                 <button
                   onClick={() => { if (!isCollapsed) setShowPages(!showPages); }}
-                  className={`flex items-center gap-2 bg-purple-800/40 hover:bg-purple-800/60 rounded-lg transition-colors
+                  className={`flex items-center gap-2 bg-white/6 hover:bg-white/10 rounded-lg transition-colors
                     ${isCollapsed ? 'lg:px-2 lg:py-2' : 'w-full px-3 py-2'}`}
                 >
                   <span className="h-2.5 w-2.5 rounded-full bg-purple-400 shrink-0" />
                   <span className={`text-white font-semibold text-sm truncate flex-1 text-left ${isCollapsed ? 'lg:hidden' : ''}`}>
                     {selectedPage.name}
                   </span>
-                  <ChevronDown className={`h-3.5 w-3.5 text-purple-300 shrink-0 transition-transform ${showPages ? 'rotate-180' : ''} ${isCollapsed ? 'lg:hidden' : ''}`} />
+                  <ChevronDown className={`h-3.5 w-3.5 text-slate-400 shrink-0 transition-transform ${showPages ? 'rotate-180' : ''} ${isCollapsed ? 'lg:hidden' : ''}`} />
                 </button>
               ) : (
                 <div className={`flex items-center gap-2 px-3 py-2 ${isCollapsed ? 'lg:justify-center lg:px-2' : ''}`}>
@@ -98,7 +98,7 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen, onLogout, pages = [], s
 
               {/* Page dropdown */}
               {showPages && pages.length > 0 && !isCollapsed && (
-                <div className="mt-1 bg-purple-900/80 rounded-lg overflow-hidden">
+                <div className="mt-1 bg-dk-raised rounded-lg overflow-hidden border border-white/8">
                   {pages.map(page => (
                     <button
                       key={page.id}
@@ -108,8 +108,8 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen, onLogout, pages = [], s
                       }}
                       className={`w-full text-left px-3 py-2 text-sm transition-colors
                         ${page.id === selectedPage?.id
-                          ? 'text-white bg-purple-700/50'
-                          : 'text-purple-300 hover:text-white hover:bg-purple-800/40'
+                          ? 'text-white bg-violet-500/15'
+                          : 'text-slate-400 hover:text-white hover:bg-white/6'
                         }`}
                     >
                       {page.name}
@@ -132,8 +132,8 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen, onLogout, pages = [], s
                 onClick={() => setIsMobileOpen(false)}
                 className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors
                   ${active
-                    ? 'bg-purple-700/60 text-white'
-                    : 'text-purple-300 hover:text-white hover:bg-purple-800/40'
+                    ? 'bg-violet-500/20 text-white'
+                    : 'text-slate-400 hover:text-white hover:bg-white/6'
                   }
                   ${isCollapsed ? 'lg:justify-center lg:p-2' : 'px-3 py-2.5'}
                   px-3 py-2.5`}
@@ -141,7 +141,7 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen, onLogout, pages = [], s
                 <item.icon className={`shrink-0 ${isCollapsed ? 'lg:h-5 lg:w-5' : 'h-4 w-4'} h-4 w-4`} />
                 <span className={`flex-1 ${isCollapsed ? 'lg:hidden' : ''}`}>{item.name}</span>
                 {(item as { badge?: string }).badge && (
-                  <span className={`text-[10px] font-bold bg-purple-500 text-white px-1.5 py-0.5 rounded uppercase tracking-wide ${isCollapsed ? 'lg:hidden' : ''}`}>
+                  <span className={`text-[10px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded uppercase tracking-wide ${isCollapsed ? 'lg:hidden' : ''}`}>
                     {(item as { badge?: string }).badge}
                   </span>
                 )}
@@ -150,7 +150,7 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen, onLogout, pages = [], s
           })}
 
           {/* Divider */}
-          <div className="my-3 border-t border-purple-900/50" />
+          <div className="my-3 border-t border-white/8" />
 
           {/* Secondary Nav */}
           {secondaryNav.map(item => {
@@ -162,8 +162,8 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen, onLogout, pages = [], s
                 onClick={() => setIsMobileOpen(false)}
                 className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors
                   ${active
-                    ? 'bg-purple-700/60 text-white'
-                    : 'text-purple-300 hover:text-white hover:bg-purple-800/40'
+                    ? 'bg-violet-500/20 text-white'
+                    : 'text-slate-400 hover:text-white hover:bg-white/6'
                   }
                   ${isCollapsed ? 'lg:justify-center lg:p-2' : 'px-3 py-2.5'}
                   px-3 py-2.5`}
@@ -179,7 +179,7 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen, onLogout, pages = [], s
         <div className={`pb-2 space-y-2 ${isCollapsed ? 'lg:px-2' : 'px-3'}`}>
           <button
             onClick={onLogout}
-            className={`w-full flex items-center gap-3 rounded-lg text-sm font-medium text-purple-400 hover:text-white hover:bg-purple-800/40 transition-colors
+            className={`w-full flex items-center gap-3 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/6 transition-colors
               ${isCollapsed ? 'lg:justify-center lg:p-2' : 'px-3 py-2.5'}
               px-3 py-2.5`}
           >
@@ -189,11 +189,11 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen, onLogout, pages = [], s
         </div>
 
         {/* Desktop collapse toggle */}
-        <div className="hidden lg:flex items-center justify-center border-t border-purple-900/50 py-3">
+        <div className="hidden lg:flex items-center justify-center border-t border-white/8 py-3">
           <button
             onClick={toggleSidebar}
             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="p-2 rounded-lg text-purple-400 hover:text-white hover:bg-purple-800/40 transition-colors"
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/6 transition-colors"
           >
             {isCollapsed
               ? <ChevronRight className="h-4 w-4" />

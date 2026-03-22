@@ -91,8 +91,8 @@ export function RightPanel({
 
         {/* Mentions total */}
         <div className="text-center">
-          <p className="text-xs text-slate-500 dark:text-purple-400 mb-0.5">Mentions</p>
-          <p className="text-xl font-bold text-slate-800 dark:text-purple-100">{totalMentions.toLocaleString()}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Mentions</p>
+          <p className="text-xl font-bold text-slate-800 dark:text-white">{totalMentions.toLocaleString()}</p>
         </div>
 
         {/* Platform grid */}
@@ -134,7 +134,7 @@ export function RightPanel({
 
         {/* Sentiment */}
         <div>
-          <p className="text-xs font-semibold text-slate-700 dark:text-purple-300 uppercase tracking-wide mb-2">Sentiment</p>
+          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-2">Sentiment</p>
           <div className="space-y-1.5">
             {SENTIMENTS.map(s => (
               <button
@@ -142,8 +142,8 @@ export function RightPanel({
                 onClick={() => onToggleSentiment(s.value)}
                 className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors
                   ${selectedSentiments.includes(s.value)
-                    ? 'bg-purple-800/50 text-purple-200 font-medium'
-                    : 'text-slate-600 dark:text-purple-300 hover:bg-slate-50 dark:hover:bg-dk-raised'}`}
+                    ? 'bg-violet-500/15 text-violet-200 font-medium'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-dk-raised'}`}
               >
                 <span className={`h-2 w-2 rounded-full ${s.dot}`} />
                 {s.label}
@@ -156,7 +156,7 @@ export function RightPanel({
 
         {/* Emotion */}
         <div>
-          <p className="text-xs font-semibold text-slate-700 dark:text-purple-300 uppercase tracking-wide mb-2">Emotion</p>
+          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-2">Emotion</p>
           <div className="flex flex-wrap gap-1.5">
             {EMOTIONS.map(e => (
               <button
@@ -164,8 +164,8 @@ export function RightPanel({
                 onClick={() => onToggleEmotion(e.value)}
                 className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs border transition-colors
                   ${selectedEmotions.includes(e.value)
-                    ? 'bg-purple-800/60 border-purple-600 text-purple-200 font-medium'
-                    : 'border-slate-200 dark:border-dk-border text-slate-600 dark:text-purple-400 hover:border-slate-300 dark:hover:border-purple-500'}`}
+                    ? 'bg-violet-500/15 border-violet-500/50 text-violet-200 font-medium'
+                    : 'border-slate-200 dark:border-dk-border text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-white/20'}`}
               >
                 <span>{e.emoji}</span>
                 {e.label}
@@ -178,10 +178,10 @@ export function RightPanel({
 
         {/* Language */}
         <div>
-          <p className="text-xs font-semibold text-slate-700 dark:text-purple-300 uppercase tracking-wide mb-2">Language</p>
-          <span className="inline-flex items-center gap-1 bg-slate-100 dark:bg-dk-raised text-slate-500 dark:text-purple-400 text-xs px-2 py-1 rounded-full font-medium cursor-not-allowed">
+          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-2">Language</p>
+          <span className="inline-flex items-center gap-1 bg-slate-100 dark:bg-dk-raised text-slate-500 dark:text-slate-400 text-xs px-2 py-1 rounded-full font-medium cursor-not-allowed">
             All Languages
-            <span className="text-[9px] font-semibold bg-slate-200 dark:bg-purple-900/50 text-slate-400 dark:text-purple-500 px-1 rounded uppercase tracking-wide">Soon</span>
+            <span className="text-[9px] font-semibold bg-slate-200 dark:bg-white/8 text-slate-400 dark:text-slate-500 px-1 rounded uppercase tracking-wide">Soon</span>
           </span>
         </div>
       </div>

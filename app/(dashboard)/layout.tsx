@@ -45,7 +45,7 @@ function DatePicker({ preset, onChange }: { preset: DatePreset; onChange: (p: Da
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(o => !o)}
-        className="inline-flex items-center gap-1.5 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700/50 text-purple-700 dark:text-purple-300 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
+        className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-white/6 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
       >
         <CalendarDays className="h-3 w-3" />
         {label}
@@ -60,8 +60,8 @@ function DatePicker({ preset, onChange }: { preset: DatePreset; onChange: (p: Da
               onClick={() => { onChange(p.key); setOpen(false); }}
               className={`w-full text-left px-4 py-2.5 text-xs font-medium transition-colors
                 ${preset === p.key
-                  ? 'bg-purple-900/60 text-purple-200'
-                  : 'text-slate-600 dark:text-purple-300 hover:bg-slate-50 dark:hover:bg-dk-raised'
+                  ? 'bg-violet-500/15 text-violet-300'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-dk-raised'
                 }`}
             >
               {p.label}
@@ -207,7 +207,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Mobile-only top bar — always visible so hamburger is accessible on all pages */}
           <div className="lg:hidden shrink-0 bg-white dark:bg-dk-surface border-b border-slate-200 dark:border-dk-border px-4 py-3">
             <button
-              className="text-slate-600 dark:text-purple-300 hover:text-slate-900 dark:hover:text-white"
+              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               onClick={() => setIsMobileOpen(true)}
             >
               <Menu className="h-5 w-5" />
@@ -223,7 +223,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {selectedPlatforms.map(p => (
               <span
                 key={p}
-                className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-dk-raised text-slate-700 dark:text-purple-200 text-xs font-medium px-3 py-1.5 rounded-full"
+                className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-dk-raised text-slate-700 dark:text-slate-300 text-xs font-medium px-3 py-1.5 rounded-full"
               >
                 {PLATFORM_LABELS[p]}
                 <button
@@ -238,7 +238,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {(selectedPlatforms.length > 0 || selectedSentiments.length > 0 || selectedEmotions.length > 0) && (
               <button
                 onClick={clearAll}
-                className="ml-auto text-xs text-slate-500 dark:text-purple-400 hover:text-slate-800 dark:hover:text-purple-200 font-medium px-3 py-1.5 rounded-full hover:bg-slate-50 dark:hover:bg-dk-raised transition-colors"
+                className="ml-auto text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium px-3 py-1.5 rounded-full hover:bg-slate-50 dark:hover:bg-dk-raised transition-colors"
               >
                 Clear Filters
               </button>

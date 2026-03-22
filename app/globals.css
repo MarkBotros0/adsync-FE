@@ -7,11 +7,11 @@
   --color-background: #ffffff;
   --color-foreground: #0f172a;
 
-  /* Purple dark mode palette — matches sidebar gradient */
-  --color-dk-bg:      #0d0618;   /* deepest page background  */
-  --color-dk-surface: #1a0a2e;   /* cards / panels           */
-  --color-dk-raised:  #251043;   /* elevated / hover states  */
-  --color-dk-border:  #3b1f6a;   /* borders & dividers       */
+  /* Dark mode palette — near-black with subtle cool tint, purple as accent only */
+  --color-dk-bg:      #0e0e13;   /* deepest page background  */
+  --color-dk-surface: #15151d;   /* cards / panels           */
+  --color-dk-raised:  #1d1d28;   /* elevated / hover states  */
+  --color-dk-border:  #28283a;   /* borders & dividers       */
 }
 
 /* Pointer cursor for all interactive elements */
@@ -46,14 +46,14 @@ input[type="range"] {
 }
 
 .dark ::-webkit-scrollbar-track {
-  background: #0d0618;
+  background: #0e0e13;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #3b1f6a;
+  background: #2e2e44;
   border-radius: 9999px;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #5b2fa0;
+  background: #4a4a68;
 }

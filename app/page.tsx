@@ -132,7 +132,7 @@ const PLANS = [
 
 function Nav() {
   return (
-    <nav className="sticky top-0 z-50 border-b border-white/8 backdrop-blur-xl bg-[#0f0620]/80">
+    <nav className="sticky top-0 z-50 border-b border-white/8 backdrop-blur-xl bg-[#0a0a0e]/90">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="h-8 w-8 rounded-lg bg-purple-600 flex items-center justify-center">
@@ -389,7 +389,7 @@ export default function LandingPage() {
   return (
     <div
       className="min-h-screen text-white"
-      style={{ background: 'linear-gradient(160deg, #1a0a2e 0%, #0f0620 40%, #0a0416 100%)' }}
+      style={{ background: 'linear-gradient(160deg, #13121a 0%, #0d0c14 40%, #0a0a0e 100%)' }}
     >
       <Nav />
       <Hero />

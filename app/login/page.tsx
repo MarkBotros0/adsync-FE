@@ -169,17 +169,17 @@ export default function LoginPage() {
 
   if (!mounted || auth.isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0620]">
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0e]">
         <Loader2 className="h-8 w-8 text-purple-400 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex bg-[#0c0618]">
+    <div className="min-h-screen flex bg-[#0a0a0e]">
 
       {/* ── Left branding panel ── */}
-      <div className="hidden lg:flex flex-col justify-between px-14 py-12 w-[52%] relative overflow-hidden bg-gradient-to-br from-[#1a0a2e] via-[#130720] to-[#0c0618]">
+      <div className="hidden lg:flex flex-col justify-between px-14 py-12 w-[52%] relative overflow-hidden bg-gradient-to-br from-[#15151d] via-[#111118] to-[#0a0a0e]">
         {/* Decorative blobs */}
         <div className="absolute top-0 left-0 h-96 w-96 rounded-full bg-purple-700/20 blur-[120px] -translate-x-1/2 -translate-y-1/2" />
         <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-indigo-700/15 blur-[100px] translate-x-1/4 translate-y-1/4" />
