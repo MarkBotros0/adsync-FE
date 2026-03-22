@@ -315,6 +315,22 @@ export const instagramAPI = {
       params: { session_id: sessionId, days },
     }),
 
+  /** Get Reels only for an IG account using the dedicated /reels edge. */
+  getReels: (
+    igUserId: string,
+    sessionId: string,
+    options?: { limit?: number; since?: string; until?: string; after?: string },
+  ): Promise<AxiosResponse<ApiResponse<IGMediaList>>> =>
+    api.get<ApiResponse<IGMediaList>>(`/instagram/accounts/${igUserId}/reels`, {
+      params: {
+        session_id: sessionId,
+        limit: options?.limit,
+        since: options?.since,
+        until: options?.until,
+        after: options?.after,
+      },
+    }),
+
   /** Get lifetime audience demographics (gender/age, cities, countries). */
   getAudienceDemographics: (
     igUserId: string,

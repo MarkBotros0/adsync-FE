@@ -363,6 +363,7 @@ export interface IGAccountsResponse {
 export interface IGMediaEngagement {
   likes: number;
   comments: number;
+  views: number;
 }
 
 export type IGMediaType = 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM';

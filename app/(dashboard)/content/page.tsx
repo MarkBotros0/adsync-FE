@@ -5,32 +5,62 @@ import { RefreshCw } from 'lucide-react';
 import { StatsBar } from '@/components/content/StatsBar';
 import { MentionCard } from '@/components/content/MentionCard';
 import { useFilters, getDateRange } from '@/contexts/filter-context';
-import { pagesAPI } from '@/lib/api';
-import type { Mention, MentionStats } from '@/lib/types';
+import { pagesAPI, instagramAPI } from '@/lib/api';
+import type { Mention, MentionStats, IGMedia } from '@/lib/types';
 
 type SortMode = 'recent' | 'popular';
 
-function postsToMentions(posts: any[], pageName: string): Mention[] {
+function postsToMentions(posts: Record<string, unknown>[], pageName: string): Mention[] {
   return posts
     .filter(post => post.message || post.story)
     .map(post => {
-      const hashtags = (post.message || '').match(/#\w+/g) ?? [];
-      const total = post.engagement?.total ?? 0;
+      const message = (post.message as string) || '';
+      const hashtags = message.match(/#\w+/g) ?? [];
+      const engagement = post.engagement as { total?: number; reactions?: number } | undefined;
+      const total = engagement?.total ?? 0;
       return {
-        id: post.id,
+        id: post.id as string,
         platform: 'facebook' as const,
         author: {
           name: pageName,
           username: `@${pageName.toLowerCase().replace(/\s+/g, '')}`,
           followers: 0,
         },
-        content: post.message || post.story || '',
-        url: post.permalink_url || '#',
-        created_at: post.created_time,
+        content: message || (post.story as string) || '',
+        url: (post.permalink_url as string) || '#',
+        created_at: post.created_time as string,
         sentiment: 'neutral' as const,
-        reach: (post.engagement?.reactions ?? 0) * 10,
+        reach: (engagement?.reactions ?? 0) * 10,
         interactions: total,
         performance: Math.min(10, Math.max(1, Math.ceil(total / 5))),
+        language: 'en',
+        hashtags: hashtags.length > 0 ? hashtags : undefined,
+      };
+    });
+}
+
+function igMediaToMentions(items: IGMedia[], username: string): Mention[] {
+  return items
+    .filter(item => item.media_product_type !== 'STORY')
+    .map(item => {
+      const hashtags = (item.caption || '').match(/#\w+/g) ?? [];
+      const interactions = (item.engagement?.likes ?? 0) + (item.engagement?.comments ?? 0);
+      const views = item.engagement?.views ?? 0;
+      return {
+        id: item.id,
+        platform: 'instagram' as const,
+        author: {
+          name: item.username || username,
+          username: `@${item.username || username}`,
+          followers: 0,
+        },
+        content: item.caption || '',
+        url: item.permalink || '#',
+        created_at: item.timestamp,
+        sentiment: 'neutral' as const,
+        reach: item.media_product_type === 'REELS' ? views : (item.engagement?.likes ?? 0) * 10,
+        interactions,
+        performance: Math.min(10, Math.max(1, Math.ceil(interactions / 5))),
         language: 'en',
         hashtags: hashtags.length > 0 ? hashtags : undefined,
       };
@@ -52,33 +82,51 @@ function computeStats(mentions: Mention[]): MentionStats {
 }
 
 export default function MentionsPage() {
-  const { selectedPlatforms, selectedSentiments, selectedEmotions, sessionId, selectedPage, setTotalPosts, datePreset } = useFilters();
+  const { selectedPlatforms, selectedSentiments, selectedEmotions, sessionId, igSessionId, igUserId, selectedPage, setTotalPosts, datePreset } = useFilters();
   const [sort, setSort] = useState<SortMode>('recent');
   const [mentions, setMentions] = useState<Mention[]>([]);
   const [stats, setStats] = useState<MentionStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
 
-  const fetchPosts = async (session: string, page: { id: string; access_token: string; name: string }) => {
-    try {
-      const res = await pagesAPI.getPagePosts(page.id, session, 50, page.access_token);
-      const posts = res.data.posts ?? [];
-      if (posts.length > 0) {
-        const transformed = postsToMentions(posts, page.name);
-        setMentions(transformed);
-        setStats(computeStats(transformed));
-        setTotalPosts(transformed.length);
+  const fetchAllContent = async () => {
+    const results: Mention[] = [];
+
+    // Facebook posts
+    if (sessionId && selectedPage) {
+      try {
+        const res = await pagesAPI.getPagePosts(selectedPage.id, sessionId, 50, selectedPage.access_token);
+        const posts = (res.data.posts ?? []) as Record<string, unknown>[];
+        results.push(...postsToMentions(posts, selectedPage.name));
+      } catch (err) {
+        console.error('Failed to fetch Facebook posts:', err);
       }
-    } catch (err) {
-      console.error('Failed to fetch posts for mentions:', err);
+    }
+
+    // Instagram posts and Reels
+    if (igSessionId && igUserId) {
+      try {
+        const res = await instagramAPI.getMedia(igUserId, igSessionId, { limit: 50 });
+        const items = res.data.data?.media ?? [];
+        const username = items[0]?.username ?? igUserId;
+        results.push(...igMediaToMentions(items, username));
+      } catch (err) {
+        console.error('Failed to fetch Instagram media:', err);
+      }
+    }
+
+    if (results.length > 0) {
+      setMentions(results);
+      setStats(computeStats(results));
+      setTotalPosts(results.length);
     }
   };
 
   useEffect(() => {
-    if (!sessionId || !selectedPage) return;
+    if (!sessionId && !igSessionId) return;
     setLoading(true);
-    fetchPosts(sessionId, selectedPage).finally(() => setLoading(false));
-  }, [sessionId, selectedPage]);
+    fetchAllContent().finally(() => setLoading(false));
+  }, [sessionId, selectedPage, igSessionId, igUserId]);
 
   const filtered = useMemo(() => {
     let list = [...mentions];
@@ -111,15 +159,15 @@ export default function MentionsPage() {
   };
 
   const handleUpdate = async () => {
-    if (!sessionId || !selectedPage) {
-      setUpdating(true);
-      setTimeout(() => setUpdating(false), 1200);
-      return;
-    }
     setUpdating(true);
-    await fetchPosts(sessionId, selectedPage).catch(() => {});
+    await fetchAllContent().catch(() => {});
     setUpdating(false);
   };
+
+  const sourceLine = [
+    selectedPage ? `${selectedPage.name} · Facebook` : null,
+    igUserId ? 'Instagram Reels' : null,
+  ].filter(Boolean).join(' · ') || 'Demo data';
 
   const emptyStats: MentionStats = {
     total_mentions: 0, total_reach: 0, total_interactions: 0,
@@ -150,9 +198,7 @@ export default function MentionsPage() {
         </div>
 
         <div className="ml-auto flex items-center gap-3">
-          <span className="text-xs text-slate-400 dark:text-purple-500">
-            {selectedPage ? `${selectedPage.name} · Facebook` : 'Demo data'}
-          </span>
+          <span className="text-xs text-slate-400 dark:text-purple-500">{sourceLine}</span>
           <button
             onClick={handleUpdate}
             className="flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium transition-colors"

@@ -38,6 +38,8 @@ export interface FilterCtx {
   setDatePreset: (preset: DatePreset) => void;
   clearAll: () => void;
   sessionId: string | null;
+  igSessionId: string | null;
+  igUserId: string | null;
   pages: FacebookPage[];
   selectedPage: FacebookPage | null;
   onPageSelect: (page: FacebookPage) => void;
@@ -57,6 +59,8 @@ export const FilterContext = createContext<FilterCtx>({
   setDatePreset: () => {},
   clearAll: () => {},
   sessionId: null,
+  igSessionId: null,
+  igUserId: null,
   pages: [],
   selectedPage: null,
   onPageSelect: () => {},

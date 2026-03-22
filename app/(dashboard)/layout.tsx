@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { RightPanel } from '@/components/layout/RightPanel';
-import { authAPI, pagesAPI, facebookSessionAPI } from '@/lib/api';
+import { authAPI, pagesAPI, facebookSessionAPI, instagramSessionAPI } from '@/lib/api';
 import type { FacebookPage, MentionPlatform, Sentiment, Emotion } from '@/lib/types';
 import { FilterContext, DATE_PRESETS, type DatePreset } from '@/contexts/filter-context';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
@@ -76,6 +76,8 @@ function DatePicker({ preset, onChange }: { preset: DatePreset; onChange: (p: Da
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen]       = useState(false);
   const [sessionId, setSessionId]             = useState<string | null>(null);
+  const [igSessionId, setIgSessionId]         = useState<string | null>(null);
+  const [igUserId, setIgUserId]               = useState<string | null>(null);
   const [pages, setPages]                     = useState<FacebookPage[]>([]);
   const [selectedPage, setSelectedPage]       = useState<FacebookPage | null>(null);
   const [totalPosts, setTotalPosts]           = useState(0);
@@ -90,13 +92,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const dateLabel = DATE_PRESETS.find(p => p.key === datePreset)?.label ?? 'Last 3 months';
 
-  // Load the brand's linked Facebook session from the API
+  // Load the brand's linked Facebook and Instagram sessions from the API
   useEffect(() => {
     if (!auth.token || auth.isLoading) return;
     facebookSessionAPI.getSession(auth.token).then(res => {
       if (res.data.connected && res.data.session_id) {
         setSessionId(res.data.session_id);
         loadPages(res.data.session_id);
+      }
+    }).catch(() => {});
+    instagramSessionAPI.getSession(auth.token).then(res => {
+      if (res.data.connected && res.data.session_id && res.data.ig_user_id) {
+        setIgSessionId(res.data.session_id);
+        setIgUserId(res.data.ig_user_id);
       }
     }).catch(() => {});
   }, [auth.token, auth.isLoading]);
@@ -175,6 +183,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setDatePreset,
       clearAll,
       sessionId,
+      igSessionId,
+      igUserId,
       pages,
       selectedPage,
       onPageSelect: handlePageSelect,
