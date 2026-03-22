@@ -6,31 +6,30 @@ import { StatsBar } from '@/components/content/StatsBar';
 import { MentionCard } from '@/components/content/MentionCard';
 import { useFilters, getDateRange } from '@/contexts/filter-context';
 import { pagesAPI, instagramAPI } from '@/lib/api';
-import type { Mention, MentionStats, IGMedia } from '@/lib/types';
+import type { Mention, MentionStats, IGMedia, Post } from '@/lib/types';
 
 type SortMode = 'recent' | 'popular';
 
-function postsToMentions(posts: Record<string, unknown>[], pageName: string): Mention[] {
+function postsToMentions(posts: Post[], pageName: string): Mention[] {
   return posts
     .filter(post => post.message || post.story)
     .map(post => {
-      const message = (post.message as string) || '';
+      const message = post.message || '';
       const hashtags = message.match(/#\w+/g) ?? [];
-      const engagement = post.engagement as { total?: number; reactions?: number } | undefined;
-      const total = engagement?.total ?? 0;
+      const total = post.engagement?.total ?? 0;
       return {
-        id: post.id as string,
+        id: post.id,
         platform: 'facebook' as const,
         author: {
           name: pageName,
           username: `@${pageName.toLowerCase().replace(/\s+/g, '')}`,
           followers: 0,
         },
-        content: message || (post.story as string) || '',
-        url: (post.permalink_url as string) || '#',
-        created_at: post.created_time as string,
+        content: message || post.story || '',
+        url: post.permalink_url || '#',
+        created_at: post.created_time,
         sentiment: 'neutral' as const,
-        reach: (engagement?.reactions ?? 0) * 10,
+        reach: (post.engagement?.reactions ?? 0) * 10,
         interactions: total,
         performance: Math.min(10, Math.max(1, Math.ceil(total / 5))),
         language: 'en',
@@ -96,7 +95,7 @@ export default function MentionsPage() {
     if (sessionId && selectedPage) {
       try {
         const res = await pagesAPI.getPagePosts(selectedPage.id, sessionId, 50, selectedPage.access_token);
-        const posts = (res.data.posts ?? []) as Record<string, unknown>[];
+        const posts = res.data.posts ?? [];
         results.push(...postsToMentions(posts, selectedPage.name));
       } catch (err) {
         console.error('Failed to fetch Facebook posts:', err);
