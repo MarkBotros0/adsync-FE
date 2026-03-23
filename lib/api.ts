@@ -24,6 +24,7 @@ import type {
   TikTokVideoList,
   BrandRegisterPayload,
   BrandLoginPayload,
+  ContentFeedResponse,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -361,6 +362,30 @@ export const oauthCallbackAPI = {
   /** Forward the TikTok OAuth callback code+state to the backend. */
   tiktokCallback: (code: string, state: string): Promise<AxiosResponse<OAuthCallbackResponse>> =>
     api.get<OAuthCallbackResponse>('/tiktok/auth/callback', { params: { code, state } }),
+};
+
+// ─── Unified Content Feed API ─────────────────────────────────────────────────
+
+export const contentFeedAPI = {
+  /**
+   * Fetch content from all connected platforms in a single call.
+   * Authenticated via brand JWT — sessions are resolved server-side.
+   */
+  getFeed: (
+    brandToken: string,
+    options?: {
+      platforms?: string;
+      date_from?: string;
+      date_to?: string;
+      sort?: 'recent' | 'popular';
+      page?: number;
+      page_size?: number;
+    },
+  ): Promise<AxiosResponse<ContentFeedResponse>> =>
+    api.get<ContentFeedResponse>('/content/feed', {
+      headers: _brandAuthHeaders(brandToken),
+      params: options,
+    }),
 };
 
 export default api;

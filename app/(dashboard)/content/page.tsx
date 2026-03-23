@@ -1,179 +1,30 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { StatsBar } from '@/components/content/StatsBar';
 import { MentionCard } from '@/components/content/MentionCard';
 import { useFilters, getDateRange } from '@/contexts/filter-context';
-import { pagesAPI, instagramAPI, tiktokAPI } from '@/lib/api';
-import type { Mention, MentionStats, IGMedia, Post, TikTokVideo } from '@/lib/types';
+import { useContentData } from '@/contexts/content-data-context';
+import type { MentionStats } from '@/lib/types';
 
 type SortMode = 'recent' | 'popular';
 
-function postsToMentions(posts: Post[], pageName: string): Mention[] {
-  return posts
-    .filter(post => post.message || post.story)
-    .map(post => {
-      const message = post.message || '';
-      const hashtags = message.match(/#\w+/g) ?? [];
-      const total = post.engagement?.total ?? 0;
-      return {
-        id: post.id,
-        platform: 'facebook' as const,
-        author: {
-          name: pageName,
-          username: `@${pageName.toLowerCase().replace(/\s+/g, '')}`,
-          followers: 0,
-        },
-        content: message || post.story || '',
-        url: post.permalink_url || '#',
-        created_at: post.created_time,
-        sentiment: 'neutral' as const,
-        reach: (post.engagement?.reactions ?? 0) * 10,
-        interactions: total,
-        performance: Math.min(10, Math.max(1, Math.ceil(total / 5))),
-        language: 'en',
-        hashtags: hashtags.length > 0 ? hashtags : undefined,
-      };
-    });
-}
-
-function igMediaToMentions(items: IGMedia[], username: string): Mention[] {
-  return items
-    .filter(item => item.media_product_type !== 'STORY')
-    .map(item => {
-      const hashtags = (item.caption || '').match(/#\w+/g) ?? [];
-      const interactions = (item.engagement?.likes ?? 0) + (item.engagement?.comments ?? 0);
-      const views = item.engagement?.views ?? 0;
-      return {
-        id: item.id,
-        platform: 'instagram' as const,
-        author: {
-          name: item.username || username,
-          username: `@${item.username || username}`,
-          followers: 0,
-        },
-        content: item.caption || '',
-        url: item.permalink || '#',
-        created_at: item.timestamp,
-        sentiment: 'neutral' as const,
-        reach: item.media_product_type === 'REELS' ? views : (item.engagement?.likes ?? 0) * 10,
-        interactions,
-        performance: Math.min(10, Math.max(1, Math.ceil(interactions / 5))),
-        language: 'en',
-        hashtags: hashtags.length > 0 ? hashtags : undefined,
-      };
-    });
-}
-
-function tiktokVideosToMentions(videos: TikTokVideo[], displayName: string): Mention[] {
-  return videos.map(video => {
-    const interactions = (video.engagement?.likes ?? 0) + (video.engagement?.comments ?? 0) + (video.engagement?.shares ?? 0);
-    const hashtags = (video.title || video.description || '').match(/#\w+/g) ?? [];
-    return {
-      id: video.id,
-      platform: 'tiktok' as const,
-      author: {
-        name: displayName,
-        username: `@${displayName}`,
-        followers: 0,
-      },
-      content: video.description || video.title || '',
-      url: video.share_url || '#',
-      created_at: new Date(video.created_at * 1000).toISOString(),
-      sentiment: 'neutral' as const,
-      reach: video.engagement?.views ?? 0,
-      interactions,
-      performance: Math.min(10, Math.max(1, Math.ceil(interactions / 5))),
-      language: 'en',
-      hashtags: hashtags.length > 0 ? hashtags : undefined,
-      image_url: video.cover_image_url || undefined,
-    };
-  });
-}
-
-function computeStats(mentions: Mention[]): MentionStats {
-  const totalInteractions = mentions.reduce((s, m) => s + m.interactions, 0);
-  const totalReach = mentions.reduce((s, m) => s + m.reach, 0);
-  return {
-    total_mentions: mentions.length,
-    total_reach: totalReach,
-    total_interactions: totalInteractions,
-    negative_count: 0,
-    positive_count: 0,
-    neutral_count: mentions.length,
-    positive_percentage: 0,
-  };
-}
+const EMPTY_STATS: MentionStats = {
+  total_mentions: 0, total_reach: 0, total_interactions: 0,
+  negative_count: 0, positive_count: 0, neutral_count: 0, positive_percentage: 0,
+};
 
 export default function MentionsPage() {
-  const { selectedPlatforms, selectedSentiments, selectedEmotions, sessionId, igSessionId, igUserId, ttSessionId, ttOpenId, selectedPage, setTotalPosts, setPostsByPlatform, datePreset } = useFilters();
+  const { selectedPlatforms, selectedSentiments, selectedEmotions, datePreset, customFrom, customTo } = useFilters();
+  const { mentions, stats, loading, reload, deleteMention } = useContentData();
   const [sort, setSort] = useState<SortMode>('recent');
-  const [mentions, setMentions] = useState<Mention[]>([]);
-  const [stats, setStats] = useState<MentionStats | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [updating, setUpdating] = useState(false);
-
-  const fetchAllContent = async () => {
-    const results: Mention[] = [];
-
-    // Facebook posts
-    if (sessionId && selectedPage) {
-      try {
-        const res = await pagesAPI.getPagePosts(selectedPage.id, sessionId, 50, selectedPage.access_token);
-        const posts = res.data.posts ?? [];
-        results.push(...postsToMentions(posts, selectedPage.name));
-      } catch {
-        // Silent fail — page continues with partial data from other platforms
-      }
-    }
-
-    // Instagram posts and Reels
-    if (igSessionId && igUserId) {
-      try {
-        const res = await instagramAPI.getMedia(igUserId, igSessionId, { limit: 50 });
-        const items = res.data.data?.media ?? [];
-        const username = items[0]?.username ?? igUserId;
-        results.push(...igMediaToMentions(items, username));
-      } catch {
-        // Silent fail — page continues with partial data from other platforms
-      }
-    }
-
-    // TikTok videos
-    if (ttSessionId) {
-      try {
-        const res = await tiktokAPI.getVideos(ttSessionId, { max_count: 20 });
-        const videos = res.data.data?.videos ?? [];
-        const displayName = res.data.data?.display_name ?? ttOpenId ?? 'TikTok';
-        results.push(...tiktokVideosToMentions(videos, displayName));
-      } catch {
-        // Silent fail — page continues with partial data from other platforms
-      }
-    }
-
-    if (results.length > 0) {
-      setMentions(results);
-      setStats(computeStats(results));
-      setTotalPosts(results.length);
-      const counts: Partial<Record<string, number>> = {};
-      for (const m of results) {
-        counts[m.platform] = (counts[m.platform] ?? 0) + 1;
-      }
-      setPostsByPlatform(counts);
-    }
-  };
-
-  useEffect(() => {
-    if (!sessionId && !igSessionId && !ttSessionId) return;
-    setLoading(true);
-    fetchAllContent().finally(() => setLoading(false));
-  }, [sessionId, selectedPage, igSessionId, igUserId, ttSessionId, ttOpenId]);
+  const [reloading, setReloading] = useState(false);
 
   const filtered = useMemo(() => {
     let list = [...mentions];
 
-    const { from, to } = getDateRange(datePreset);
+    const { from, to } = getDateRange(datePreset, customFrom, customTo);
     if (from) list = list.filter(m => new Date(m.created_at) >= from);
     if (to)   list = list.filter(m => new Date(m.created_at) <= to);
 
@@ -194,33 +45,21 @@ export default function MentionsPage() {
     }
 
     return list;
-  }, [mentions, selectedPlatforms, selectedSentiments, selectedEmotions, sort, datePreset]);
+  }, [mentions, selectedPlatforms, selectedSentiments, selectedEmotions, sort, datePreset, customFrom, customTo]);
 
-  const handleDelete = (id: string) => {
-    setMentions(prev => prev.filter(m => m.id !== id));
+  const handleReload = async () => {
+    setReloading(true);
+    reload();
+    // Give the reload a moment to start before clearing the local spinner
+    setTimeout(() => setReloading(false), 800);
   };
 
-  const handleUpdate = async () => {
-    setUpdating(true);
-    await fetchAllContent().catch(() => {});
-    setUpdating(false);
-  };
-
-  const sourceLine = [
-    selectedPage ? `${selectedPage.name} · Facebook` : null,
-    igUserId ? 'Instagram' : null,
-    ttOpenId ? 'TikTok' : null,
-  ].filter(Boolean).join(' · ') || 'Demo data';
-
-  const emptyStats: MentionStats = {
-    total_mentions: 0, total_reach: 0, total_interactions: 0,
-    negative_count: 0, positive_count: 0, neutral_count: 0, positive_percentage: 0,
-  };
+  const spinning = loading || reloading;
 
   return (
     <div className="flex flex-col h-full">
       {/* Stats bar */}
-      <StatsBar stats={stats ?? emptyStats} />
+      <StatsBar stats={stats ?? EMPTY_STATS} />
 
       {/* Mentions list header */}
       <div className="bg-white dark:bg-dk-surface border-b border-slate-200 dark:border-dk-border px-5 py-2.5 flex items-center gap-4">
@@ -241,13 +80,13 @@ export default function MentionsPage() {
         </div>
 
         <div className="ml-auto flex items-center gap-3">
-          <span className="text-xs text-slate-400 dark:text-purple-500">{sourceLine}</span>
           <button
-            onClick={handleUpdate}
-            className="flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium transition-colors"
+            onClick={handleReload}
+            disabled={spinning}
+            className="flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium transition-colors disabled:opacity-60"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${updating || loading ? 'animate-spin' : ''}`} />
-            Update Data
+            <RefreshCw className={`h-3.5 w-3.5 ${spinning ? 'animate-spin' : ''}`} />
+            Reload Data
           </button>
         </div>
       </div>
@@ -275,7 +114,7 @@ export default function MentionsPage() {
               <MentionCard
                 key={mention.id}
                 mention={mention}
-                onDelete={handleDelete}
+                onDelete={deleteMention}
               />
             ))
           )}

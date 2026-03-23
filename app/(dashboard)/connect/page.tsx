@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { authAPI, facebookSessionAPI, instagramSessionAPI, tiktokSessionAPI } from '@/lib/api';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
+import { useFilters } from '@/contexts/filter-context';
 import { Loader2, CheckCircle2, Circle, ExternalLink, Unplug } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import type { PlatformConnectionStatus } from '@/lib/types';
 
 // ─── Platform definitions ─────────────────────────────────────────────────────
 
@@ -129,12 +131,6 @@ const PLATFORMS: PlatformDef[] = [
 
 // ─── Platform card ────────────────────────────────────────────────────────────
 
-interface ConnectionStatus {
-  connected: boolean;
-  user_name?: string | null;
-  loading: boolean;
-}
-
 function PlatformCard({
   platform,
   status,
@@ -142,7 +138,7 @@ function PlatformCard({
   onDisconnect,
 }: {
   platform: PlatformDef;
-  status: ConnectionStatus;
+  status: PlatformConnectionStatus;
   onConnect: () => void;
   onDisconnect: () => void;
 }) {
@@ -227,81 +223,26 @@ function PlatformCard({
 
 export default function ConnectPage() {
   const auth = useBrandAuthContext();
+  const { connectionStatuses, setConnectionStatuses, refreshConnections } = useFilters();
   const searchParams = useSearchParams();
   const toastedRef = useRef(false);
 
-  const [statuses, setStatuses] = useState<Record<string, ConnectionStatus>>(
-    Object.fromEntries(PLATFORMS.map(p => [p.id, { connected: false, loading: p.available }]))
-  );
-
-  // Load Facebook + Instagram connection status on mount
-  useEffect(() => {
-    if (auth.isLoading) return;
-
-    if (!auth.token) {
-      setStatuses(prev => ({
-        ...prev,
-        facebook: { connected: false, loading: false },
-        instagram: { connected: false, loading: false },
-        tiktok: { connected: false, loading: false },
-      }));
-      return;
-    }
-
-    facebookSessionAPI.getSession(auth.token)
-      .then(res => {
-        setStatuses(prev => ({
-          ...prev,
-          facebook: {
-            connected: res.data.connected,
-            user_name: res.data.user_name,
-            loading: false,
-          },
-        }));
-      })
-      .catch(() => {
-        setStatuses(prev => ({ ...prev, facebook: { connected: false, loading: false } }));
-      });
-
-    instagramSessionAPI.getSession(auth.token)
-      .then(res => {
-        setStatuses(prev => ({
-          ...prev,
-          instagram: {
-            connected: res.data.connected,
-            user_name: res.data.username ? `@${res.data.username}` : null,
-            loading: false,
-          },
-        }));
-      })
-      .catch(() => {
-        setStatuses(prev => ({ ...prev, instagram: { connected: false, loading: false } }));
-      });
-
-    tiktokSessionAPI.getSession(auth.token)
-      .then(res => {
-        setStatuses(prev => ({
-          ...prev,
-          tiktok: {
-            connected: res.data.connected,
-            user_name: res.data.display_name,
-            loading: false,
-          },
-        }));
-      })
-      .catch(() => {
-        setStatuses(prev => ({ ...prev, tiktok: { connected: false, loading: false } }));
-      });
-  }, [auth.token, auth.isLoading]);
-
-  // Show success toast if redirected back after connecting
+  // After OAuth redirect back, refresh connections to pick up the new session
   useEffect(() => {
     const connected = searchParams.get('connected');
     if ((connected === 'facebook' || connected === 'instagram' || connected === 'tiktok') && !toastedRef.current) {
       toastedRef.current = true;
       toast.success(`${connected.charAt(0).toUpperCase() + connected.slice(1)} connected successfully!`);
+      refreshConnections();
     }
-  }, [searchParams]);
+  }, [searchParams, refreshConnections]);
+
+  const statuses: Record<string, PlatformConnectionStatus> = {
+    ...Object.fromEntries(PLATFORMS.filter(p => !p.available).map(p => [p.id, { connected: false, user_name: null, loading: false }])),
+    facebook: connectionStatuses.facebook,
+    instagram: connectionStatuses.instagram,
+    tiktok: connectionStatuses.tiktok,
+  };
 
   const handleConnect = async (platformId: string) => {
     if (!auth.token) {
@@ -340,34 +281,34 @@ export default function ConnectPage() {
     if (!auth.token) return;
 
     if (platformId === 'facebook') {
-      setStatuses(prev => ({ ...prev, facebook: { ...prev.facebook, loading: true } }));
+      setConnectionStatuses({ ...connectionStatuses, facebook: { ...connectionStatuses.facebook, loading: true } });
       try {
         await facebookSessionAPI.disconnect(auth.token);
-        setStatuses(prev => ({ ...prev, facebook: { connected: false, loading: false } }));
+        setConnectionStatuses({ ...connectionStatuses, facebook: { connected: false, user_name: null, loading: false } });
         toast.success('Facebook disconnected');
       } catch {
         toast.error('Failed to disconnect Facebook');
-        setStatuses(prev => ({ ...prev, facebook: { ...prev.facebook, loading: false } }));
+        setConnectionStatuses({ ...connectionStatuses, facebook: { ...connectionStatuses.facebook, loading: false } });
       }
     } else if (platformId === 'instagram') {
-      setStatuses(prev => ({ ...prev, instagram: { ...prev.instagram, loading: true } }));
+      setConnectionStatuses({ ...connectionStatuses, instagram: { ...connectionStatuses.instagram, loading: true } });
       try {
         await instagramSessionAPI.disconnect(auth.token);
-        setStatuses(prev => ({ ...prev, instagram: { connected: false, loading: false } }));
+        setConnectionStatuses({ ...connectionStatuses, instagram: { connected: false, user_name: null, loading: false } });
         toast.success('Instagram disconnected');
       } catch {
         toast.error('Failed to disconnect Instagram');
-        setStatuses(prev => ({ ...prev, instagram: { ...prev.instagram, loading: false } }));
+        setConnectionStatuses({ ...connectionStatuses, instagram: { ...connectionStatuses.instagram, loading: false } });
       }
     } else if (platformId === 'tiktok') {
-      setStatuses(prev => ({ ...prev, tiktok: { ...prev.tiktok, loading: true } }));
+      setConnectionStatuses({ ...connectionStatuses, tiktok: { ...connectionStatuses.tiktok, loading: true } });
       try {
         await tiktokSessionAPI.disconnect(auth.token);
-        setStatuses(prev => ({ ...prev, tiktok: { connected: false, loading: false } }));
+        setConnectionStatuses({ ...connectionStatuses, tiktok: { connected: false, user_name: null, loading: false } });
         toast.success('TikTok disconnected');
       } catch {
         toast.error('Failed to disconnect TikTok');
-        setStatuses(prev => ({ ...prev, tiktok: { ...prev.tiktok, loading: false } }));
+        setConnectionStatuses({ ...connectionStatuses, tiktok: { ...connectionStatuses.tiktok, loading: false } });
       }
     }
   };

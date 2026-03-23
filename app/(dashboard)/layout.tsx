@@ -1,77 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { RightPanel } from '@/components/layout/RightPanel';
-import { authAPI, pagesAPI, facebookSessionAPI, instagramSessionAPI, tiktokSessionAPI } from '@/lib/api';
-import type { FacebookPage, MentionPlatform, Sentiment, Emotion } from '@/lib/types';
+import { pagesAPI, facebookSessionAPI, instagramSessionAPI, tiktokSessionAPI, contentFeedAPI } from '@/lib/api';
+import type { FacebookPage, MentionPlatform, Sentiment, Emotion, ConnectionStatuses, Mention, MentionStats } from '@/lib/types';
 import { FilterContext, DATE_PRESETS, type DatePreset } from '@/contexts/filter-context';
+import { ContentDataContext } from '@/contexts/content-data-context';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
 import { SidebarProvider } from '@/contexts/sidebar-context';
 import { toast } from 'sonner';
-import { Menu, X, CalendarDays, ChevronDown } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
-// ─── Platform label map ───────────────────────────────────────────────────────
-const PLATFORM_LABELS: Record<MentionPlatform, string> = {
-  twitter:   'X(Twitter)',
-  facebook:  'Facebook',
-  instagram: 'Instagram',
-  tiktok:    'TikTok',
-  youtube:   'YouTube',
-  linkedin:  'LinkedIn',
-  bluesky:   'Bluesky',
-  reddit:    'Reddit',
-  forums:    'Forums',
-  news:      'News',
-  blogs:     'Blogs',
-  web:       'Web',
-};
-
-function DatePicker({ preset, onChange }: { preset: DatePreset; onChange: (p: DatePreset) => void }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const label = DATE_PRESETS.find(p => p.key === preset)?.label ?? 'Date range';
-
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
-  }, []);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-white/6 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
-      >
-        <CalendarDays className="h-3 w-3" />
-        {label}
-        <ChevronDown className={`h-3 w-3 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-
-      {open && (
-        <div className="absolute left-0 top-full mt-1.5 z-50 bg-white dark:bg-dk-surface border border-slate-200 dark:border-dk-border rounded-xl shadow-lg overflow-hidden min-w-[160px]">
-          {DATE_PRESETS.map(p => (
-            <button
-              key={p.key}
-              onClick={() => { onChange(p.key); setOpen(false); }}
-              className={`w-full text-left px-4 py-2.5 text-xs font-medium transition-colors
-                ${preset === p.key
-                  ? 'bg-violet-500/15 text-violet-300'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-dk-raised'
-                }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen]       = useState(false);
@@ -80,6 +21,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [igUserId, setIgUserId]               = useState<string | null>(null);
   const [ttSessionId, setTtSessionId]         = useState<string | null>(null);
   const [ttOpenId, setTtOpenId]               = useState<string | null>(null);
+  const [connectionStatuses, setConnectionStatuses] = useState<ConnectionStatuses>({
+    facebook: { connected: false, user_name: null, loading: true },
+    instagram: { connected: false, user_name: null, loading: true },
+    tiktok: { connected: false, user_name: null, loading: true },
+  });
   const [pages, setPages]                     = useState<FacebookPage[]>([]);
   const [selectedPage, setSelectedPage]       = useState<FacebookPage | null>(null);
   const [totalPosts, setTotalPosts]           = useState(0);
@@ -87,36 +33,125 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [selectedPlatforms, setSelectedPlatforms] = useState<MentionPlatform[]>([]);
   const [selectedSentiments, setSelectedSentiments] = useState<Sentiment[]>([]);
   const [selectedEmotions, setSelectedEmotions]     = useState<Emotion[]>([]);
-  const [datePreset, setDatePreset]           = useState<DatePreset>('3m');
-  const searchParams = useSearchParams();
+  const [datePreset, setDatePreset]           = useState<DatePreset>('all');
+  const [customFrom, setCustomFrom]           = useState<string | null>(null);
+  const [customTo, setCustomTo]               = useState<string | null>(null);
+
+  // ── Content data (global cache, fetched once per session) ─────────────────
+  const [mentions, setMentions]               = useState<Mention[]>([]);
+  const [contentStats, setContentStats]       = useState<MentionStats | null>(null);
+  const [contentLoading, setContentLoading]   = useState(false);
+  const [contentLoaded, setContentLoaded]     = useState(false);
+  const fetchingRef = useRef(false);
+
   const router = useRouter();
   const pathname = usePathname();
   const auth = useBrandAuthContext();
 
-  const dateLabel = DATE_PRESETS.find(p => p.key === datePreset)?.label ?? 'Last 3 months';
+  const dateLabel = datePreset === 'custom' ? 'Custom range' : (DATE_PRESETS.find(p => p.key === datePreset)?.label ?? 'Last 3 months');
 
-  // Load the brand's linked Facebook and Instagram sessions from the API
-  useEffect(() => {
-    if (!auth.token || auth.isLoading) return;
+  // Load the brand's linked platform sessions from the API (called once on auth, and after connect/disconnect)
+  const loadSessions = useCallback(async () => {
+    if (!auth.token) return;
+    setConnectionStatuses(prev => ({
+      facebook: { ...prev.facebook, loading: true },
+      instagram: { ...prev.instagram, loading: true },
+      tiktok: { ...prev.tiktok, loading: true },
+    }));
     facebookSessionAPI.getSession(auth.token).then(res => {
       if (res.data.connected && res.data.session_id) {
         setSessionId(res.data.session_id);
         loadPages(res.data.session_id);
+      } else {
+        setSessionId(null);
       }
-    }).catch(() => {});
+      setConnectionStatuses(prev => ({
+        ...prev,
+        facebook: { connected: res.data.connected, user_name: res.data.user_name, loading: false },
+      }));
+    }).catch(() => {
+      setConnectionStatuses(prev => ({ ...prev, facebook: { connected: false, user_name: null, loading: false } }));
+    });
     instagramSessionAPI.getSession(auth.token).then(res => {
       if (res.data.connected && res.data.session_id && res.data.ig_user_id) {
         setIgSessionId(res.data.session_id);
         setIgUserId(res.data.ig_user_id);
+      } else {
+        setIgSessionId(null);
+        setIgUserId(null);
       }
-    }).catch(() => {});
+      setConnectionStatuses(prev => ({
+        ...prev,
+        instagram: { connected: res.data.connected, user_name: res.data.username ? `@${res.data.username}` : null, loading: false },
+      }));
+    }).catch(() => {
+      setConnectionStatuses(prev => ({ ...prev, instagram: { connected: false, user_name: null, loading: false } }));
+    });
     tiktokSessionAPI.getSession(auth.token).then(res => {
       if (res.data.connected && res.data.session_id && res.data.open_id) {
         setTtSessionId(res.data.session_id);
         setTtOpenId(res.data.open_id);
+      } else {
+        setTtSessionId(null);
+        setTtOpenId(null);
       }
-    }).catch(() => {});
-  }, [auth.token, auth.isLoading]);
+      setConnectionStatuses(prev => ({
+        ...prev,
+        tiktok: { connected: res.data.connected, user_name: res.data.display_name, loading: false },
+      }));
+    }).catch(() => {
+      setConnectionStatuses(prev => ({ ...prev, tiktok: { connected: false, user_name: null, loading: false } }));
+    });
+  }, [auth.token]);
+
+  useEffect(() => {
+    if (!auth.token || auth.isLoading) return;
+    loadSessions();
+  }, [auth.token, auth.isLoading, loadSessions]);
+
+  // ── Unified content fetch ─────────────────────────────────────────────────
+  const loadContent = useCallback(async () => {
+    if (!auth.token || fetchingRef.current) return;
+    fetchingRef.current = true;
+    setContentLoading(true);
+    try {
+      const res = await contentFeedAPI.getFeed(auth.token, { page_size: 200 });
+      if (res.data.success) {
+        const { items, stats } = res.data.data;
+        setMentions(items);
+        setContentStats(stats as MentionStats);
+        setTotalPosts(items.length);
+        const counts: Partial<Record<MentionPlatform, number>> = {};
+        for (const m of items) {
+          counts[m.platform] = (counts[m.platform] ?? 0) + 1;
+        }
+        setPostsByPlatform(counts);
+        setContentLoaded(true);
+      }
+    } catch {
+      // Silently fail — not all platforms may be connected
+    } finally {
+      fetchingRef.current = false;
+      setContentLoading(false);
+    }
+  }, [auth.token]);
+
+  // Load once when auth is ready and data hasn't been fetched yet
+  useEffect(() => {
+    if (auth.token && !auth.isLoading && !contentLoaded && !fetchingRef.current) {
+      loadContent();
+    }
+  }, [auth.token, auth.isLoading, contentLoaded, loadContent]);
+
+  const reloadContent = useCallback(() => {
+    setContentLoaded(false);
+    loadContent();
+  }, [loadContent]);
+
+  const deleteMention = useCallback((id: string) => {
+    setMentions(prev => prev.filter(m => m.id !== id));
+    setTotalPosts(prev => Math.max(0, prev - 1));
+  }, []);
 
   const loadPages = async (session: string) => {
     try {
@@ -190,12 +225,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       datePreset,
       dateLabel,
       setDatePreset,
+      customFrom,
+      customTo,
+      setCustomFrom,
+      setCustomTo,
       clearAll,
       sessionId,
       igSessionId,
       igUserId,
       ttSessionId,
       ttOpenId,
+      connectionStatuses,
+      setConnectionStatuses,
+      refreshConnections: loadSessions,
       pages,
       selectedPage,
       onPageSelect: handlePageSelect,
@@ -203,6 +245,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setTotalPosts,
       postsByPlatform,
       setPostsByPlatform,
+    }}>
+    <ContentDataContext.Provider value={{
+      mentions,
+      stats: contentStats,
+      loading: contentLoading,
+      loaded: contentLoaded,
+      reload: reloadContent,
+      deleteMention,
     }}>
       <div className="flex h-dvh overflow-hidden bg-slate-50 dark:bg-dk-bg">
         {/* Left sidebar */}
@@ -227,45 +277,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
           </div>
 
-          {/* Top filter bar — only shown on Content */}
-          {pathname === '/content' && <div className="shrink-0 bg-white dark:bg-dk-surface border-b border-slate-200 dark:border-dk-border px-4 py-3 flex items-center gap-3 flex-wrap">
-            {/* Date picker */}
-            <DatePicker preset={datePreset} onChange={setDatePreset} />
-
-            {/* Active platform pills */}
-            {selectedPlatforms.map(p => (
-              <span
-                key={p}
-                className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-dk-raised text-slate-700 dark:text-slate-300 text-xs font-medium px-3 py-1.5 rounded-full"
-              >
-                {PLATFORM_LABELS[p]}
-                <button
-                  onClick={() => togglePlatform(p)}
-                  className="hover:text-red-500 transition-colors"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
-
-            {(selectedPlatforms.length > 0 || selectedSentiments.length > 0 || selectedEmotions.length > 0) && (
-              <button
-                onClick={clearAll}
-                className="ml-auto text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium px-3 py-1.5 rounded-full hover:bg-slate-50 dark:hover:bg-dk-raised transition-colors"
-              >
-                Clear Filters
-              </button>
-            )}
-          </div>}
-
           {/* Page content */}
           <div className="flex flex-1 min-h-0 overflow-hidden">
             <main className="flex-1 overflow-y-auto">
               {children}
             </main>
 
-            {/* Right panel — only shown on Content */}
-            {pathname === '/content' && (
+            {/* Right panel — shown on Content and Analytics */}
+            {(pathname === '/content' || pathname === '/analytics') && (
               <RightPanel
                 selectedPlatforms={selectedPlatforms}
                 onTogglePlatform={togglePlatform}
@@ -273,11 +292,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onToggleSentiment={toggleSentiment}
                 selectedEmotions={selectedEmotions}
                 onToggleEmotion={toggleEmotion}
+                datePreset={datePreset}
+                onDatePresetChange={setDatePreset}
+                customFrom={customFrom}
+                customTo={customTo}
+                onCustomFromChange={setCustomFrom}
+                onCustomToChange={setCustomTo}
               />
             )}
           </div>
         </div>
       </div>
+    </ContentDataContext.Provider>
     </FilterContext.Provider>
     </SidebarProvider>
   );

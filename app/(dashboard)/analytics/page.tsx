@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { StatsBar } from '@/components/content/StatsBar';
 import { VolumeReachChart } from '@/components/charts/VolumeReachChart';
 import { SentimentTimelineChart } from '@/components/charts/SentimentTimelineChart';
@@ -10,9 +10,10 @@ import { TrendingConversationsChart } from '@/components/charts/TrendingConversa
 import { BestTimeHeatmap } from '@/components/charts/BestTimeHeatmap';
 import { TrendingHashtagsChart } from '@/components/charts/TrendingHashtagsChart';
 import { useFilters, getDateRange } from '@/contexts/filter-context';
-import { pagesAPI } from '@/lib/api';
+import { useContentData } from '@/contexts/content-data-context';
 import type {
-  Post,
+  Mention,
+  MentionPlatform,
   MentionStats,
   VolumeDataPoint,
   InteractionDataPoint,
@@ -29,36 +30,36 @@ function formatDate(isoString: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function postsToVolumeData(posts: Post[]): VolumeDataPoint[] {
+function mentionsToVolumeData(mentions: Mention[]): VolumeDataPoint[] {
   const byDate: Record<string, { mentions: number; reach: number }> = {};
-  posts.forEach(post => {
-    const date = formatDate(post.created_time);
+  mentions.forEach(m => {
+    const date = formatDate(m.created_at);
     if (!byDate[date]) byDate[date] = { mentions: 0, reach: 0 };
     byDate[date].mentions++;
-    byDate[date].reach += post.engagement?.total ?? 0;
+    byDate[date].reach += m.reach;
   });
   return Object.entries(byDate)
     .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
     .map(([date, v]) => ({ date, ...v }));
 }
 
-function postsToInteractionsData(posts: Post[]): InteractionDataPoint[] {
+function mentionsToInteractionsData(mentions: Mention[]): InteractionDataPoint[] {
   const byDate: Record<string, number> = {};
-  posts.forEach(post => {
-    const date = formatDate(post.created_time);
-    byDate[date] = (byDate[date] ?? 0) + (post.engagement?.total ?? 0);
+  mentions.forEach(m => {
+    const date = formatDate(m.created_at);
+    byDate[date] = (byDate[date] ?? 0) + m.interactions;
   });
   return Object.entries(byDate)
     .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
     .map(([date, interactions]) => ({ date, interactions }));
 }
 
-function postsToSentimentData(posts: Post[]): SentimentDataPoint[] {
+function mentionsToSentimentData(mentions: Mention[]): SentimentDataPoint[] {
   const byDate: Record<string, { positive: number; negative: number; neutral: number }> = {};
-  posts.forEach(post => {
-    const date = formatDate(post.created_time);
+  mentions.forEach(m => {
+    const date = formatDate(m.created_at);
     if (!byDate[date]) byDate[date] = { positive: 0, negative: 0, neutral: 0 };
-    byDate[date].neutral++;
+    byDate[date][m.sentiment]++;
   });
   return Object.entries(byDate)
     .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
@@ -75,18 +76,16 @@ const STOPWORDS = new Set([
   'its','re','ve','ll','am','im','dont','cant','wont','isnt','arent','wasnt','here',
 ]);
 
-function extractKeywords(posts: Post[]): TrendingConversation[] {
+function extractKeywords(mentions: Mention[]): TrendingConversation[] {
   const counts: Record<string, number> = {};
-  posts.forEach(post => {
-    const words = (post.message || '')
+  mentions.forEach(m => {
+    const words = (m.content || '')
       .toLowerCase()
       .replace(/https?:\/\/\S+/g, '')
       .replace(/[^a-z0-9\s]/g, ' ')
       .split(/\s+/)
       .filter((w: string) => w.length > 3 && !STOPWORDS.has(w));
-    words.forEach((word: string) => {
-      counts[word] = (counts[word] ?? 0) + 1;
-    });
+    words.forEach((word: string) => { counts[word] = (counts[word] ?? 0) + 1; });
   });
   return Object.entries(counts)
     .filter(([, c]) => c > 1)
@@ -95,10 +94,10 @@ function extractKeywords(posts: Post[]): TrendingConversation[] {
     .map(([phrase, count]) => ({ phrase, count, sentiment: 'neutral' as const }));
 }
 
-function extractHashtags(posts: Post[]): TrendingHashtag[] {
+function extractHashtags(mentions: Mention[]): TrendingHashtag[] {
   const counts: Record<string, number> = {};
-  posts.forEach(post => {
-    const tags = (post.message || '').match(/#\w+/g) ?? [];
+  mentions.forEach(m => {
+    const tags = m.hashtags ?? (m.content || '').match(/#\w+/g) ?? [];
     tags.forEach((tag: string) => {
       const lower = tag.toLowerCase();
       counts[lower] = (counts[lower] ?? 0) + 1;
@@ -110,11 +109,11 @@ function extractHashtags(posts: Post[]): TrendingHashtag[] {
     .map(([hashtag, count]) => ({ hashtag, count, sentiment: 'neutral' as const }));
 }
 
-function postsToHeatmapData(posts: Post[]): HeatmapCell[] {
+function mentionsToHeatmapData(mentions: Mention[]): HeatmapCell[] {
   const cells: Record<string, number> = {};
-  posts.forEach(post => {
-    const d = new Date(post.created_time);
-    const day = (d.getDay() + 6) % 7; // 0=Mon…6=Sun
+  mentions.forEach(m => {
+    const d = new Date(m.created_at);
+    const day = (d.getDay() + 6) % 7;
     const hour = d.getHours();
     const key = `${day}_${hour}`;
     cells[key] = (cells[key] ?? 0) + 1;
@@ -128,47 +127,56 @@ function postsToHeatmapData(posts: Post[]): HeatmapCell[] {
   return result;
 }
 
-function computeStats(posts: Post[]): MentionStats {
-  const totalInteractions = posts.reduce((s: number, p: Post) => s + (p.engagement?.total ?? 0), 0);
+function computeStats(mentions: Mention[]): MentionStats {
   return {
-    total_mentions: posts.length,
-    total_reach: totalInteractions,
-    total_interactions: totalInteractions,
-    negative_count: 0,
-    positive_count: 0,
-    neutral_count: posts.length,
-    positive_percentage: 0,
+    total_mentions: mentions.length,
+    total_reach: mentions.reduce((s, m) => s + m.reach, 0),
+    total_interactions: mentions.reduce((s, m) => s + m.interactions, 0),
+    negative_count: mentions.filter(m => m.sentiment === 'negative').length,
+    positive_count: mentions.filter(m => m.sentiment === 'positive').length,
+    neutral_count: mentions.filter(m => m.sentiment === 'neutral').length,
+    positive_percentage: mentions.length
+      ? Math.round((mentions.filter(m => m.sentiment === 'positive').length / mentions.length) * 100)
+      : 0,
   };
 }
 
-// ─── Posts by platform ─────────────────────────────────────────────────────────
-function InfluencersByMediaType({ totalFacebookPosts }: { totalFacebookPosts: number }) {
-  const items = [
-    { label: 'Facebook', count: totalFacebookPosts, color: 'bg-blue-600' },
-    { label: 'Instagram', count: 0, color: 'bg-pink-500' },
-    { label: 'X(Twitter)', count: 0, color: 'bg-black' },
-    { label: 'YouTube', count: 0, color: 'bg-red-500' },
-    { label: 'TikTok', count: 0, color: 'bg-gray-800' },
-  ];
-  const max = Math.max(1, ...items.map(i => i.count));
+// ─── Posts by platform chart ───────────────────────────────────────────────────
+
+const PLATFORM_COLORS: Partial<Record<MentionPlatform, string>> = {
+  facebook:  'bg-blue-600',
+  instagram: 'bg-pink-500',
+  tiktok:    'bg-gray-800',
+  twitter:   'bg-black',
+  youtube:   'bg-red-500',
+  linkedin:  'bg-blue-700',
+};
+
+function PostsByPlatform({ mentions }: { mentions: Mention[] }) {
+  const counts: Partial<Record<MentionPlatform, number>> = {};
+  mentions.forEach(m => { counts[m.platform] = (counts[m.platform] ?? 0) + 1; });
+
+  const items = (Object.entries(counts) as [MentionPlatform, number][])
+    .sort(([, a], [, b]) => b - a);
+  const max = Math.max(1, ...items.map(([, c]) => c));
 
   return (
     <div className="bg-white dark:bg-dk-surface rounded-xl border border-slate-200 dark:border-dk-border overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-dk-border">
+      <div className="px-5 py-4 border-b border-slate-100 dark:border-dk-border">
         <h3 className="text-sm font-semibold text-slate-800 dark:text-purple-100">Posts by Platform</h3>
       </div>
       <div className="p-5">
         <div className="flex items-end justify-center gap-4 h-40">
-          {items.map(item => {
-            const pct = (item.count / max) * 100;
+          {items.map(([platform, count]) => {
+            const pct = (count / max) * 100;
             return (
-              <div key={item.label} className="flex flex-col items-center gap-1 flex-1">
-                <span className="text-xs font-semibold text-slate-700 dark:text-purple-200">{item.count}</span>
+              <div key={platform} className="flex flex-col items-center gap-1 flex-1">
+                <span className="text-xs font-semibold text-slate-700 dark:text-purple-200">{count}</span>
                 <div
-                  className={`w-full rounded-t-lg ${item.color} opacity-90`}
+                  className={`w-full rounded-t-lg ${PLATFORM_COLORS[platform] ?? 'bg-slate-400'} opacity-90`}
                   style={{ height: `${Math.max(4, pct)}%` }}
                 />
-                <span className="text-[10px] text-slate-500 dark:text-purple-400 text-center leading-tight">{item.label}</span>
+                <span className="text-[10px] text-slate-500 dark:text-purple-400 text-center leading-tight capitalize">{platform}</span>
               </div>
             );
           })}
@@ -181,43 +189,32 @@ function InfluencersByMediaType({ totalFacebookPosts }: { totalFacebookPosts: nu
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AnalyticsPage() {
-  const { sessionId, selectedPage, setTotalPosts, datePreset } = useFilters();
-  const [stats, setStats] = useState<MentionStats | null>(null);
-  const [volumeData, setVolumeData] = useState<VolumeDataPoint[] | undefined>(undefined);
-  const [interactionsData, setInteractionsData] = useState<InteractionDataPoint[] | undefined>(undefined);
-  const [sentimentData, setSentimentData] = useState<SentimentDataPoint[] | undefined>(undefined);
-  const [hashtagsData, setHashtagsData] = useState<TrendingHashtag[] | undefined>(undefined);
-  const [conversationsData, setConversationsData] = useState<TrendingConversation[] | undefined>(undefined);
-  const [heatmapData, setHeatmapData] = useState<HeatmapCell[] | undefined>(undefined);
-  const [loading, setLoading] = useState(false);
+  const {
+    datePreset, customFrom, customTo,
+    selectedPlatforms, selectedSentiments, selectedEmotions,
+  } = useFilters();
+  const { mentions: allMentions, loading } = useContentData();
 
-  useEffect(() => {
-    if (!sessionId || !selectedPage) return;
-    setLoading(true);
-    pagesAPI.getPagePosts(selectedPage.id, sessionId, 100, selectedPage.access_token)
-      .then(res => {
-        const { from, to } = getDateRange(datePreset);
-        const posts = (res.data.posts ?? []).filter((p: Post) => {
-          const d = new Date(p.created_time);
-          if (from && d < from) return false;
-          if (to   && d > to)   return false;
-          return true;
-        });
-        const computed = computeStats(posts);
-        setStats(computed);
-        setTotalPosts(posts.length);
-        setVolumeData(postsToVolumeData(posts));
-        setInteractionsData(postsToInteractionsData(posts));
-        setSentimentData(postsToSentimentData(posts));
-        const tags = extractHashtags(posts);
-        if (tags.length > 0) setHashtagsData(tags);
-        const keywords = extractKeywords(posts);
-        if (keywords.length > 0) setConversationsData(keywords);
-        setHeatmapData(postsToHeatmapData(posts));
-      })
-      .catch(() => { /* analytics silently degrades if posts unavailable */ })
-      .finally(() => setLoading(false));
-  }, [sessionId, selectedPage, datePreset]);
+  const filtered = useMemo(() => {
+    const { from, to } = getDateRange(datePreset, customFrom, customTo);
+    return allMentions.filter(m => {
+      const d = new Date(m.created_at);
+      if (from && d < from) return false;
+      if (to   && d > to)   return false;
+      if (selectedPlatforms.length > 0 && !selectedPlatforms.includes(m.platform)) return false;
+      if (selectedSentiments.length > 0 && !selectedSentiments.includes(m.sentiment)) return false;
+      if (selectedEmotions.length > 0 && (!m.emotion || !selectedEmotions.includes(m.emotion))) return false;
+      return true;
+    });
+  }, [allMentions, datePreset, customFrom, customTo, selectedPlatforms, selectedSentiments, selectedEmotions]);
+
+  const stats     = useMemo(() => filtered.length > 0 ? computeStats(filtered) : null, [filtered]);
+  const volumeData        = useMemo(() => mentionsToVolumeData(filtered), [filtered]);
+  const interactionsData  = useMemo(() => mentionsToInteractionsData(filtered), [filtered]);
+  const sentimentData     = useMemo(() => mentionsToSentimentData(filtered), [filtered]);
+  const hashtagsData      = useMemo(() => { const t = extractHashtags(filtered); return t.length > 0 ? t : undefined; }, [filtered]);
+  const conversationsData = useMemo(() => { const k = extractKeywords(filtered); return k.length > 0 ? k : undefined; }, [filtered]);
+  const heatmapData       = useMemo(() => mentionsToHeatmapData(filtered), [filtered]);
 
   if (loading) {
     return (
@@ -230,39 +227,32 @@ export default function AnalyticsPage() {
   if (!stats) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500 dark:text-purple-400">
-        <p className="text-sm">No data available. Connect a Facebook page to see analytics.</p>
+        <p className="text-sm">No data available. Connect a platform to see analytics.</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col h-full">
-      {/* Stats bar */}
       <StatsBar stats={stats} />
 
       <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-slate-50 dark:bg-dk-bg">
-        {/* Row 1: Volume + Sentiment */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <VolumeReachChart data={volumeData} />
           <SentimentTimelineChart data={sentimentData} />
         </div>
 
-        {/* Row 2: Interactions */}
         <InteractionsChart data={interactionsData} />
 
-        {/* Row 3: Trending Conversations */}
         <TrendingConversationsChart data={conversationsData} />
 
-        {/* Row 4: Countries + Influencers by type */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <TopCountriesChart data={undefined} />
-          <InfluencersByMediaType totalFacebookPosts={stats.total_mentions} />
+          <PostsByPlatform mentions={filtered} />
         </div>
 
-        {/* Row 5: Heatmap */}
         <BestTimeHeatmap data={heatmapData} />
 
-        {/* Row 6: Hashtags */}
         <TrendingHashtagsChart data={hashtagsData} />
       </div>
     </div>

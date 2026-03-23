@@ -509,6 +509,45 @@ export interface TikTokSessionResponse {
   display_name: string | null;
 }
 
+export interface PlatformConnectionStatus {
+  connected: boolean;
+  user_name: string | null;
+  loading: boolean;
+}
+
+export interface ConnectionStatuses {
+  facebook: PlatformConnectionStatus;
+  instagram: PlatformConnectionStatus;
+  tiktok: PlatformConnectionStatus;
+}
+
+// ─── Unified Content Feed Types ───────────────────────────────────────────────
+
+export interface ContentFeedStats {
+  total_mentions: number;
+  total_reach: number;
+  total_interactions: number;
+  negative_count: number;
+  positive_count: number;
+  neutral_count: number;
+  positive_percentage: number;
+}
+
+export interface ContentFeedData {
+  items: Mention[];
+  total: number;
+  page: number;
+  page_size: number;
+  has_more: boolean;
+  platforms_fetched: MentionPlatform[];
+  stats: ContentFeedStats;
+}
+
+export interface ContentFeedResponse {
+  success: boolean;
+  data: ContentFeedData;
+}
+
 export interface BrandRegisterPayload {
   name: string;
   email: string;
