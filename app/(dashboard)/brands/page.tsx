@@ -6,7 +6,7 @@ import { adminAPI } from '@/lib/api';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
 import { toast } from 'sonner';
 import { Building2, Plus, Globe, Users, Loader2, X } from 'lucide-react';
-import type { Brand } from '@/lib/types';
+import { type Brand, UserRole } from '@/lib/types';
 import { AxiosError } from 'axios';
 
 function getApiError(err: unknown, fallback: string): string {
@@ -98,7 +98,7 @@ export default function BrandsPage() {
   const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
-    if (!auth.isLoading && auth.user?.role !== 'SUPER') {
+    if (!auth.isLoading && auth.user?.role !== UserRole.SUPER) {
       router.replace('/content');
     }
   }, [auth.isLoading, auth.user, router]);
@@ -120,7 +120,7 @@ export default function BrandsPage() {
     if (auth.token && !auth.isLoading) loadBrands();
   }, [auth.token, auth.isLoading, loadBrands]);
 
-  if (auth.isLoading || auth.user?.role !== 'SUPER') {
+  if (auth.isLoading || auth.user?.role !== UserRole.SUPER) {
     return <div className="flex items-center justify-center h-full"><Loader2 className="h-7 w-7 animate-spin text-purple-400" /></div>;
   }
 

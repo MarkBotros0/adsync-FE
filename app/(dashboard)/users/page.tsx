@@ -6,7 +6,7 @@ import { adminAPI, invitationAPI } from '@/lib/api';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
 import { toast } from 'sonner';
 import { Users, Plus, Mail, Building2, Shield, UserCheck, Loader2, X } from 'lucide-react';
-import type { User, Brand, UserRole } from '@/lib/types';
+import { type User, type Brand, UserRole } from '@/lib/types';
 import { AxiosError } from 'axios';
 
 function getApiError(err: unknown, fallback: string): string {
@@ -39,7 +39,7 @@ function InviteModal({
 }) {
   const [email, setEmail] = useState('');
   const [brandId, setBrandId] = useState<number>(brands[0]?.id ?? 0);
-  const [role, setRole] = useState<UserRole>('NORMAL');
+  const [role, setRole] = useState<UserRole>(UserRole.NORMAL);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -125,7 +125,7 @@ export default function UsersPage() {
 
   // Guard: SUPER only
   useEffect(() => {
-    if (!auth.isLoading && auth.user?.role !== 'SUPER') {
+    if (!auth.isLoading && auth.user?.role !== UserRole.SUPER) {
       router.replace('/content');
     }
   }, [auth.isLoading, auth.user, router]);
@@ -151,7 +151,7 @@ export default function UsersPage() {
     if (auth.token && !auth.isLoading) loadData();
   }, [auth.token, auth.isLoading, loadData]);
 
-  if (auth.isLoading || auth.user?.role !== 'SUPER') {
+  if (auth.isLoading || auth.user?.role !== UserRole.SUPER) {
     return <div className="flex items-center justify-center h-full"><Loader2 className="h-7 w-7 animate-spin text-purple-400" /></div>;
   }
 

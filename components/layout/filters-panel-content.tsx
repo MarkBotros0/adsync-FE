@@ -19,7 +19,7 @@ const PLATFORM_BG: Record<string, string> = {
 };
 
 function PlatformIcon({ platform }: { platform: MentionPlatform }) {
-  const cls = 'h-4 w-4 fill-white';
+  const cls = 'h-6 w-6 xl:h-4 xl:w-4 fill-white';
   switch (platform) {
     case 'twitter': return (
       <svg className={cls} viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.26 5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
@@ -97,48 +97,12 @@ export function FiltersPanelContent({
   return (
     <div className="px-3 py-4 space-y-5">
 
-      {/* Platform grid */}
-      <div className="grid grid-cols-3 gap-1.5">
-        {ACTIVE_PLATFORMS.map(platform => {
-          const count = postsByPlatform[platform] ?? 0;
-          const active = selectedPlatforms.includes(platform);
-          return (
-            <button
-              key={platform}
-              onClick={() => onTogglePlatform(platform)}
-              title={platform}
-              className={`flex flex-col items-center gap-0.5 p-1.5 rounded-lg transition-all
-                ${active ? 'ring-2 ring-purple-400 ring-offset-1 dark:ring-offset-dk-surface' : 'hover:bg-slate-50 dark:hover:bg-dk-raised'}`}
-            >
-              <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${PLATFORM_BG[platform] ?? 'bg-slate-400'}`}>
-                <PlatformIcon platform={platform} />
-              </div>
-              <span className="text-[10px] text-slate-500 font-medium">{count}</span>
-            </button>
-          );
-        })}
-        {SOON_PLATFORMS.map(platform => (
-          <div
-            key={platform}
-            title={`${platform} — coming soon`}
-            className="flex flex-col items-center gap-0.5 p-1.5 rounded-lg opacity-40 cursor-default"
-          >
-            <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${PLATFORM_BG[platform] ?? 'bg-slate-400'}`}>
-              <PlatformIcon platform={platform} />
-            </div>
-            <span className="text-[9px] text-slate-400 font-medium leading-none">soon</span>
-          </div>
-        ))}
-      </div>
-
-      <hr className="border-slate-200 dark:border-dk-border" />
-
       {/* Date range */}
       <div>
         <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-2">Date Range</p>
 
         <Select.Root value={datePreset} onValueChange={v => onDatePresetChange(v as DatePreset)}>
-          <Select.Trigger className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50 dark:bg-dk-raised border border-slate-200 dark:border-dk-border text-xs text-slate-700 dark:text-slate-200 hover:border-violet-400 dark:hover:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 transition-all group">
+          <Select.Trigger className="w-full flex items-center justify-between gap-2 px-3 py-2.5 xl:py-2 rounded-xl bg-slate-50 dark:bg-dk-raised border border-slate-200 dark:border-dk-border text-xs text-slate-700 dark:text-slate-200 hover:border-violet-400 dark:hover:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 transition-all group">
             <span className="flex items-center gap-2 min-w-0">
               <CalendarDays className="h-3.5 w-3.5 text-violet-400 shrink-0" />
               <Select.Value />
@@ -215,6 +179,42 @@ export function FiltersPanelContent({
 
       <hr className="border-slate-200 dark:border-dk-border" />
 
+      {/* Platform grid */}
+      <div className="grid grid-cols-3 gap-1.5">
+        {ACTIVE_PLATFORMS.map(platform => {
+          const count = postsByPlatform[platform] ?? 0;
+          const active = selectedPlatforms.includes(platform);
+          return (
+            <button
+              key={platform}
+              onClick={() => onTogglePlatform(platform)}
+              title={platform}
+              className={`flex flex-col items-center gap-1 p-2 xl:p-1.5 rounded-xl xl:rounded-lg transition-all
+                ${active ? 'ring-2 ring-purple-400 ring-offset-1 dark:ring-offset-dk-surface' : 'hover:bg-slate-50 dark:hover:bg-dk-raised'}`}
+            >
+              <div className={`h-12 w-12 xl:h-7 xl:w-7 rounded-xl xl:rounded-lg flex items-center justify-center ${PLATFORM_BG[platform] ?? 'bg-slate-400'}`}>
+                <PlatformIcon platform={platform} />
+              </div>
+              <span className="text-xs xl:text-[10px] text-slate-500 font-medium">{count}</span>
+            </button>
+          );
+        })}
+        {SOON_PLATFORMS.map(platform => (
+          <div
+            key={platform}
+            title={`${platform} — coming soon`}
+            className="flex flex-col items-center gap-1 p-2 xl:p-1.5 rounded-xl xl:rounded-lg opacity-40 cursor-default"
+          >
+            <div className={`h-12 w-12 xl:h-7 xl:w-7 rounded-xl xl:rounded-lg flex items-center justify-center ${PLATFORM_BG[platform] ?? 'bg-slate-400'}`}>
+              <PlatformIcon platform={platform} />
+            </div>
+            <span className="text-[10px] xl:text-[9px] text-slate-400 font-medium leading-none">soon</span>
+          </div>
+        ))}
+      </div>
+
+      <hr className="border-slate-200 dark:border-dk-border" />
+
       {/* Sentiment */}
       <div>
         <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-2">Sentiment</p>
@@ -223,12 +223,12 @@ export function FiltersPanelContent({
             <button
               key={s.value}
               onClick={() => onToggleSentiment(s.value)}
-              className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors
+              className={`w-full flex items-center gap-2.5 px-3 xl:px-2 py-3 xl:py-1.5 rounded-lg text-sm xl:text-xs transition-colors
                 ${selectedSentiments.includes(s.value)
                   ? 'bg-violet-500/15 text-violet-200 font-medium'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-dk-raised'}`}
             >
-              <span className={`h-2 w-2 rounded-full ${s.dot}`} />
+              <span className={`h-2.5 w-2.5 xl:h-2 xl:w-2 rounded-full ${s.dot}`} />
               {s.label}
             </button>
           ))}
@@ -240,12 +240,12 @@ export function FiltersPanelContent({
       {/* Emotion */}
       <div>
         <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-2">Emotion</p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2 xl:gap-1.5">
           {EMOTIONS.map(e => (
             <button
               key={e.value}
               onClick={() => onToggleEmotion(e.value)}
-              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs border transition-colors
+              className={`flex items-center gap-1.5 xl:gap-1 px-3 xl:px-2 py-1.5 xl:py-1 rounded-full text-sm xl:text-xs border transition-colors
                 ${selectedEmotions.includes(e.value)
                   ? 'bg-violet-500/15 border-violet-500/50 text-violet-200 font-medium'
                   : 'border-slate-200 dark:border-dk-border text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-white/20'}`}

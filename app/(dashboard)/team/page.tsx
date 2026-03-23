@@ -6,20 +6,21 @@ import { adminAPI, invitationAPI } from '@/lib/api';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
 import { toast } from 'sonner';
 import { UserCheck, Plus, Mail, Shield, Loader2, X } from 'lucide-react';
-import type { User, UserRole } from '@/lib/types';
+import { type User, UserRole } from '@/lib/types';
 import { AxiosError } from 'axios';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 function getApiError(err: unknown, fallback: string): string {
   return (err as AxiosError<{ detail?: string }>)?.response?.data?.detail ?? fallback;
 }
 
-const ROLE_BADGE: Record<'ADMIN' | 'NORMAL', { label: string; classes: string }> = {
+const ROLE_BADGE: Record<UserRole.ADMIN | UserRole.NORMAL, { label: string; classes: string }> = {
   ADMIN:  { label: 'Admin',  classes: 'bg-purple-500/20 text-purple-300 border border-purple-500/30' },
   NORMAL: { label: 'Member', classes: 'bg-white/10 text-white/50 border border-white/10' },
 };
 
 function RoleBadge({ role }: { role: UserRole }) {
-  if (role === 'SUPER') return null;
+  if (role === UserRole.SUPER) return null;
   const b = ROLE_BADGE[role];
   return <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${b.classes}`}>{b.label}</span>;
 }
@@ -38,7 +39,7 @@ function InviteModal({
   token: string;
 }) {
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'NORMAL' | 'ADMIN'>('NORMAL');
+  const [role, setRole] = useState<UserRole.NORMAL | UserRole.ADMIN>(UserRole.NORMAL);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,13 +80,15 @@ function InviteModal({
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Role</label>
-            <select
-              value={role} onChange={e => setRole(e.target.value as 'NORMAL' | 'ADMIN')}
-              className="bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/60"
-            >
-              <option value="NORMAL">Member</option>
-              <option value="ADMIN">Admin</option>
-            </select>
+            <Select value={role} onValueChange={(v) => setRole(v as UserRole.NORMAL | UserRole.ADMIN)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NORMAL">Member</SelectItem>
+                <SelectItem value="ADMIN">Admin</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <button
@@ -109,12 +112,15 @@ export default function TeamPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   // Guard: ADMIN only
   useEffect(() => {
     if (auth.isLoading) return;
-    if (auth.user?.role === 'SUPER') router.replace('/users');
-    else if (auth.user?.role === 'NORMAL') router.replace('/content');
+    if (auth.user?.role === UserRole.SUPER) router.replace('/users');
+    else if (auth.user?.role === UserRole.NORMAL) router.replace('/content');
   }, [auth.isLoading, auth.user, router]);
 
   const loadTeam = useCallback(async () => {
@@ -122,7 +128,7 @@ export default function TeamPage() {
     setLoading(true);
     try {
       const res = await adminAPI.listBrandUsers(auth.token, auth.user.brand_id);
-      setUsers(res.data.users);
+      setUsers(res.data.users.filter((u: User) => u.id !== auth.user!.id));
     } catch {
       toast.error('Failed to load team members');
     } finally {
@@ -131,10 +137,10 @@ export default function TeamPage() {
   }, [auth.token, auth.user?.brand_id]);
 
   useEffect(() => {
-    if (auth.token && !auth.isLoading && auth.user?.role === 'ADMIN') loadTeam();
+    if (auth.token && !auth.isLoading && auth.user?.role === UserRole.ADMIN) loadTeam();
   }, [auth.token, auth.isLoading, auth.user?.role, loadTeam]);
 
-  if (auth.isLoading || auth.user?.role !== 'ADMIN') {
+  if (!mounted || auth.isLoading || auth.user?.role !== UserRole.ADMIN) {
     return <div className="flex items-center justify-center h-full"><Loader2 className="h-7 w-7 animate-spin text-purple-400" /></div>;
   }
 
@@ -204,7 +210,7 @@ export default function TeamPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <RoleBadge role={user.role} />
-                      {user.role === 'ADMIN' && (
+                      {user.role === UserRole.ADMIN && (
                         <Shield className="h-3.5 w-3.5 text-purple-400/50" />
                       )}
                     </div>

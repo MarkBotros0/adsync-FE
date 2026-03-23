@@ -21,7 +21,7 @@ import {
   Plug,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import type { FacebookPage, UserRole } from '@/lib/types';
+import { type FacebookPage, UserRole } from '@/lib/types';
 import { useSidebar } from '@/contexts/sidebar-context';
 
 interface SidebarProps {
@@ -69,8 +69,8 @@ export function Sidebar({
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 
-  const isSuper = userRole === 'SUPER';
-  const isAdmin = userRole === 'ADMIN';
+  const isSuper = userRole === UserRole.SUPER;
+  const isAdmin = userRole === UserRole.ADMIN;
   
   // Prevent hydration mismatch by only showing role-specific UI after mount
   const [mounted, setMounted] = useState(false);
@@ -79,14 +79,13 @@ export function Sidebar({
     setMounted(true);
   }, []);
 
-  // Build nav items based on role
-  const mainNav = isSuper
-    ? superNav
-    : isAdmin
-      ? [...primaryNav, teamNav]
-      : primaryNav;
+  // Build nav items based on role — gated on `mounted` to avoid hydration mismatch
+  // (userRole is client-side data; server always sees null)
+  const mainNav = mounted
+    ? (isSuper ? superNav : isAdmin ? [...primaryNav, teamNav] : primaryNav)
+    : primaryNav;
 
-  const showSecondaryNav = !isSuper;
+  const showSecondaryNav = mounted ? !isSuper : true;
 
   const NavLink = ({ item }: { item: { name: string; href: string; icon: React.ElementType; badge?: string } }) => {
     const active = isActive(item.href);

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { ExternalLink, Trash2, Eye } from 'lucide-react';
 import type { Mention, MentionPlatform, Sentiment } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -75,6 +76,7 @@ interface MentionCardProps {
 export function MentionCard({ mention, onDelete }: MentionCardProps) {
   const platBg = PLATFORM_BG[mention.platform];
   const sentMeta = SENTIMENT_META[mention.sentiment];
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const timeAgo = formatDistanceToNow(new Date(mention.created_at), { addSuffix: true });
 
@@ -164,8 +166,9 @@ export function MentionCard({ mention, onDelete }: MentionCardProps) {
               </a>
               {onDelete && (
                 <button
-                  onClick={() => onDelete(mention.id)}
-                  className="text-slate-300 dark:text-dk-border hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                  onClick={() => setConfirmDelete(true)}
+                  aria-label="Delete mention"
+                  className="hidden"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -174,6 +177,40 @@ export function MentionCard({ mention, onDelete }: MentionCardProps) {
           </div>
         </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      {confirmDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setConfirmDelete(false)}
+        >
+          <div
+            className="bg-white dark:bg-dk-surface rounded-xl shadow-xl p-6 max-w-sm w-full mx-4 flex flex-col gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col gap-1">
+              <h2 className="text-base font-semibold text-slate-900 dark:text-purple-100">Delete mention?</h2>
+              <p className="text-sm text-slate-500 dark:text-purple-400">
+                This cannot be undone. The mention will be permanently deleted from the platform.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="px-4 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-dk-border text-slate-600 dark:text-purple-300 hover:bg-slate-50 dark:hover:bg-dk-raised transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { onDelete!(mention.id); setConfirmDelete(false); }}
+                className="px-4 py-1.5 text-sm rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

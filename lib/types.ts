@@ -324,7 +324,11 @@ export interface Brand {
   updated_at: string;
 }
 
-export type UserRole = 'SUPER' | 'ADMIN' | 'NORMAL';
+export enum UserRole {
+  SUPER = 'SUPER',
+  ADMIN = 'ADMIN',
+  NORMAL = 'NORMAL',
+}
 
 export interface User {
   id: number;
