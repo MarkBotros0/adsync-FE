@@ -33,19 +33,19 @@ interface SidebarProps {
 }
 
 const primaryNav = [
-  { name: 'Connections', href: '/connect',      icon: Plug          },
   { name: 'Content',      href: '/content',      icon: MessageSquare },
   { name: 'Analytics',   href: '/analytics',    icon: BarChart2     },
-  { name: 'AI Digest',   href: '/ai-digest',    icon: Sparkles, badge: 'NEW' },
-  { name: 'Influencers', href: '/influencers',  icon: Users         },
-  { name: 'Sites',       href: '/sites',        icon: Globe         },
-  { name: 'Settings',    href: '/settings',     icon: Settings      },
+  { name: 'AI Digest',   href: '/ai-digest',    icon: Sparkles,  badge: 'Soon' },
+  { name: 'Influencers', href: '/influencers',  icon: Users,     badge: 'Soon' },
+  { name: 'Sites',       href: '/sites',        icon: Globe,     badge: 'Soon' },
+  { name: 'Alerts',      href: '/alerts',       icon: Bell,      badge: 'Soon' },
+  { name: 'Team',        href: '/team',         icon: UserCheck, badge: 'Soon' },
 ];
 
 const secondaryNav = [
-  { name: 'Reports',      href: '/reports', icon: FileText  },
-  { name: 'Alerts',       href: '/alerts',  icon: Bell      },
-  { name: 'Team Members', href: '/team',    icon: UserCheck },
+  { name: 'Connections', href: '/connect',  icon: Plug                     },
+  { name: 'Reports',     href: '/reports',  icon: FileText, badge: 'Soon'  },
+  { name: 'Settings',    href: '/settings', icon: Settings                 },
 ];
 
 export function Sidebar({ isMobileOpen, setIsMobileOpen, onLogout, pages = [], selectedPage, onPageSelect }: SidebarProps) {
@@ -169,7 +169,12 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen, onLogout, pages = [], s
                   px-3 py-2.5`}
               >
                 <item.icon className={`shrink-0 ${isCollapsed ? 'lg:h-5 lg:w-5' : 'h-4 w-4'} h-4 w-4`} />
-                <span className={`${isCollapsed ? 'lg:hidden' : ''}`}>{item.name}</span>
+                <span className={`flex-1 ${isCollapsed ? 'lg:hidden' : ''}`}>{item.name}</span>
+                {(item as { badge?: string }).badge && (
+                  <span className={`text-[10px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded uppercase tracking-wide ${isCollapsed ? 'lg:hidden' : ''}`}>
+                    {(item as { badge?: string }).badge}
+                  </span>
+                )}
               </Link>
             );
           })}
