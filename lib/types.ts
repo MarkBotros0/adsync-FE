@@ -315,7 +315,6 @@ export interface Subscription {
 export interface Brand {
   id: number;
   name: string;
-  email: string;
   logo_url?: string;
   website?: string;
   industry?: string;
@@ -325,18 +324,38 @@ export interface Brand {
   updated_at: string;
 }
 
-/** JWT session stored client-side after brand login / register. */
-export interface BrandSession {
+export type UserRole = 'SUPER' | 'ADMIN' | 'NORMAL';
+
+export interface User {
+  id: number;
+  email: string;
+  name: string;
+  role: UserRole;
+  brand_id: number;
+  brand: Brand;
+  is_active: boolean;
+  is_email_verified: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** JWT session stored client-side after user login / register. */
+export interface UserSession {
   access_token: string;
   token_type: 'bearer';
-  brand: Brand;
+  user: User;
 }
+
+/** @deprecated Use UserSession instead. */
+export type BrandSession = UserSession;
 
 export interface BrandValidateResponse {
   valid: boolean;
+  user_id: number;
   brand_id: number;
   brand_name: string;
   subscription: SubscriptionName;
+  role: UserRole;
 }
 
 // ─── Instagram Types ──────────────────────────────────────────────────────────
@@ -561,4 +580,66 @@ export interface BrandRegisterPayload {
 export interface BrandLoginPayload {
   email: string;
   password: string;
+}
+
+export interface AddUserPayload {
+  name: string;
+  email: string;
+  password: string;
+  role?: UserRole;
+}
+
+// ─── Invitation Types ─────────────────────────────────────────────────────────
+
+export interface Invitation {
+  id: number;
+  email: string;
+  brand_id: number;
+  brand_name: string | null;
+  role: UserRole;
+  expires_at: string;
+  accepted: boolean;
+  created_at: string;
+}
+
+export interface InvitePayload {
+  email: string;
+  brand_id: number;
+  role: UserRole;
+}
+
+export interface AcceptInvitePayload {
+  token: string;
+  name: string;
+  password: string;
+}
+
+export interface InviteVerifyResponse {
+  valid: boolean;
+  email: string;
+  brand_id: number;
+  brand_name: string | null;
+  role: UserRole;
+  expires_at: string;
+}
+
+// ─── Admin Types ──────────────────────────────────────────────────────────────
+
+export interface AdminUsersResponse {
+  success: boolean;
+  total: number;
+  users: User[];
+}
+
+export interface AdminBrandsResponse {
+  success: boolean;
+  total: number;
+  brands: Brand[];
+}
+
+export interface CreateBrandPayload {
+  name: string;
+  website?: string;
+  industry?: string;
+  logo_url?: string;
 }

@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { brandAuthAPI } from '@/lib/api';
-import type { Brand, BrandSession, SubscriptionName } from '@/lib/types';
+import type { Brand, User, UserSession, SubscriptionName } from '@/lib/types';
 
 const STORAGE_KEY = 'brand_session';
 const VALIDATE_INTERVAL_MS = 5000; // 5 seconds
 
 export interface BrandAuthState {
+  user: User | null;
+  /** Convenience shortcut — same as user.brand. Kept for backwards compatibility. */
   brand: Brand | null;
   token: string | null;
   isLoading: boolean;
@@ -30,7 +32,7 @@ export interface UseBrandAuth extends BrandAuthState {
   forceSignOut: () => Promise<void>;
 }
 
-function loadStoredSession(): { token: string; brand: Brand } | null {
+function loadStoredSession(): { token: string; user: User } | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -41,9 +43,9 @@ function loadStoredSession(): { token: string; brand: Brand } | null {
   }
 }
 
-function saveSession(token: string, brand: Brand) {
+function saveSession(token: string, user: User) {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ token, brand }));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ token, user }));
 }
 
 function clearSession() {
@@ -51,13 +53,19 @@ function clearSession() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
+const EMPTY_STATE: BrandAuthState = {
+  user: null,
+  brand: null,
+  token: null,
+  isLoading: false,
+  isAuthenticated: false,
+  subscription: null,
+};
+
 export function useBrandAuth(): UseBrandAuth {
   const [state, setState] = useState<BrandAuthState>({
-    brand: null,
-    token: null,
+    ...EMPTY_STATE,
     isLoading: true,
-    isAuthenticated: false,
-    subscription: null,
   });
 
   const tokenRef = useRef<string | null>(null);
@@ -71,7 +79,7 @@ export function useBrandAuth(): UseBrandAuth {
       if (!res.data.valid) {
         // Server explicitly says session is no longer valid (e.g. force-signout by another device)
         clearSession();
-        setState({ brand: null, token: null, isLoading: false, isAuthenticated: false, subscription: null });
+        setState({ ...EMPTY_STATE });
         tokenRef.current = null;
       } else {
         setState(prev => ({
@@ -86,7 +94,7 @@ export function useBrandAuth(): UseBrandAuth {
       const status = (err as { response?: { status?: number } })?.response?.status;
       if (status === 401) {
         clearSession();
-        setState({ brand: null, token: null, isLoading: false, isAuthenticated: false, subscription: null });
+        setState({ ...EMPTY_STATE });
         tokenRef.current = null;
       }
     }
@@ -113,11 +121,12 @@ export function useBrandAuth(): UseBrandAuth {
     if (stored) {
       tokenRef.current = stored.token;
       setState({
-        brand: stored.brand,
+        user: stored.user,
+        brand: stored.user.brand ?? null,
         token: stored.token,
         isLoading: false,
         isAuthenticated: true,
-        subscription: (stored.brand.subscription?.name as SubscriptionName) ?? 'free',
+        subscription: (stored.user.brand?.subscription?.name as SubscriptionName) ?? 'free',
       });
       // Immediately validate, then start polling
       runValidation(stored.token).then(() => startPolling(stored.token));
@@ -132,30 +141,32 @@ export function useBrandAuth(): UseBrandAuth {
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await brandAuthAPI.login({ email, password });
-    const { access_token, brand } = res.data as unknown as BrandSession;
-    saveSession(access_token, brand);
+    const { access_token, user } = res.data as unknown as UserSession;
+    saveSession(access_token, user);
     tokenRef.current = access_token;
     setState({
-      brand,
+      user,
+      brand: user.brand ?? null,
       token: access_token,
       isLoading: false,
       isAuthenticated: true,
-      subscription: (brand.subscription?.name as SubscriptionName) ?? 'free',
+      subscription: (user.brand?.subscription?.name as SubscriptionName) ?? 'free',
     });
     startPolling(access_token);
   }, [startPolling]);
 
   const register = useCallback(async (payload: Parameters<typeof brandAuthAPI.register>[0]) => {
     const res = await brandAuthAPI.register(payload);
-    const { access_token, brand } = res.data as unknown as BrandSession;
-    saveSession(access_token, brand);
+    const { access_token, user } = res.data as unknown as UserSession;
+    saveSession(access_token, user);
     tokenRef.current = access_token;
     setState({
-      brand,
+      user,
+      brand: user.brand ?? null,
       token: access_token,
       isLoading: false,
       isAuthenticated: true,
-      subscription: (brand.subscription?.name as SubscriptionName) ?? 'free',
+      subscription: (user.brand?.subscription?.name as SubscriptionName) ?? 'free',
     });
     startPolling(access_token);
   }, [startPolling]);
@@ -167,17 +178,21 @@ export function useBrandAuth(): UseBrandAuth {
     stopPolling();
     clearSession();
     tokenRef.current = null;
-    setState({ brand: null, token: null, isLoading: false, isAuthenticated: false, subscription: null });
+    setState({ ...EMPTY_STATE });
   }, [stopPolling]);
 
   const forceSignOut = useCallback(async () => {
     if (!tokenRef.current) return;
     const res = await brandAuthAPI.forceSignOut(tokenRef.current);
-    // Server rotated the key and returned a new token for the current session
-    const { access_token, brand } = res.data as unknown as BrandSession;
-    saveSession(access_token, brand);
+    const { access_token } = res.data;
+
+    // Update stored session with the new token (user/brand are unchanged)
+    const stored = loadStoredSession();
+    if (stored) {
+      saveSession(access_token, stored.user);
+    }
     tokenRef.current = access_token;
-    setState(prev => ({ ...prev, token: access_token, brand }));
+    setState(prev => ({ ...prev, token: access_token }));
     // Restart polling with the new token
     startPolling(access_token);
   }, [startPolling]);

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { RightPanel } from '@/components/layout/RightPanel';
+import { MobileFiltersSheet } from '@/components/layout/mobile-filters-sheet';
 import { pagesAPI, facebookSessionAPI, instagramSessionAPI, tiktokSessionAPI, contentFeedAPI } from '@/lib/api';
 import type { FacebookPage, MentionPlatform, Sentiment, Emotion, ConnectionStatuses, Mention, MentionStats } from '@/lib/types';
 import { FilterContext, DATE_PRESETS, type DatePreset } from '@/contexts/filter-context';
@@ -11,11 +12,12 @@ import { ContentDataContext } from '@/contexts/content-data-context';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
 import { SidebarProvider } from '@/contexts/sidebar-context';
 import { toast } from 'sonner';
-import { Menu } from 'lucide-react';
+import { Menu, SlidersHorizontal } from 'lucide-react';
 
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [isMobileOpen, setIsMobileOpen]       = useState(false);
+  const [isMobileOpen, setIsMobileOpen]           = useState(false);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [sessionId, setSessionId]             = useState<string | null>(null);
   const [igSessionId, setIgSessionId]         = useState<string | null>(null);
   const [igUserId, setIgUserId]               = useState<string | null>(null);
@@ -49,6 +51,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const auth = useBrandAuthContext();
 
   const dateLabel = datePreset === 'custom' ? 'Custom range' : (DATE_PRESETS.find(p => p.key === datePreset)?.label ?? 'Last 3 months');
+  const activeFilterCount =
+    selectedPlatforms.length +
+    selectedSentiments.length +
+    selectedEmotions.length +
+    (datePreset !== 'all' ? 1 : 0);
+
+  const showFiltersPanel = pathname === '/content' || pathname === '/analytics';
 
   // Load the brand's linked platform sessions from the API (called once on auth, and after connect/disconnect)
   const loadSessions = useCallback(async () => {
@@ -260,6 +269,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           isMobileOpen={isMobileOpen}
           setIsMobileOpen={setIsMobileOpen}
           onLogout={handleLogout}
+          userRole={auth.user?.role ?? null}
           pages={pages}
           selectedPage={selectedPage}
           onPageSelect={handlePageSelect}
@@ -268,14 +278,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Main area (top bar + content) */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           {/* Mobile-only top bar — always visible so hamburger is accessible on all pages */}
-          <div className="lg:hidden shrink-0 bg-white dark:bg-dk-surface border-b border-slate-200 dark:border-dk-border px-4 py-3">
+          <div className="lg:hidden shrink-0 bg-white dark:bg-dk-surface border-b border-slate-200 dark:border-dk-border px-4 py-3 flex items-center justify-between">
             <button
+              aria-label="Open navigation"
               className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               onClick={() => setIsMobileOpen(true)}
             >
               <Menu className="h-5 w-5" />
             </button>
+
+            {/* Filters button — only on content/analytics pages */}
+            {showFiltersPanel && (
+              <button
+                aria-label="Open filters"
+                onClick={() => setIsMobileFiltersOpen(true)}
+                className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-dk-raised transition-colors"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-violet-500 text-white text-[9px] font-bold">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
+
+          {/* Tablet filter bar — visible on lg..xl gap where top bar is hidden but right panel isn't shown yet */}
+          {showFiltersPanel && (
+            <div className="hidden lg:flex xl:hidden shrink-0 items-center justify-end px-4 py-2 bg-white dark:bg-dk-surface border-b border-slate-200 dark:border-dk-border">
+              <button
+                aria-label="Open filters"
+                onClick={() => setIsMobileFiltersOpen(true)}
+                className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-dk-raised transition-colors"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-violet-500 text-white text-[9px] font-bold">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
 
           {/* Page content */}
           <div className="flex flex-1 min-h-0 overflow-hidden">
@@ -283,8 +330,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {children}
             </main>
 
-            {/* Right panel — shown on Content and Analytics */}
-            {(pathname === '/content' || pathname === '/analytics') && (
+            {/* Right panel — desktop xl+ only, shown on Content and Analytics */}
+            {showFiltersPanel && (
               <RightPanel
                 selectedPlatforms={selectedPlatforms}
                 onTogglePlatform={togglePlatform}
@@ -301,6 +348,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               />
             )}
           </div>
+
+          {/* Mobile/tablet filters bottom sheet */}
+          {showFiltersPanel && (
+            <MobileFiltersSheet
+              isOpen={isMobileFiltersOpen}
+              onClose={() => setIsMobileFiltersOpen(false)}
+              activeFilterCount={activeFilterCount}
+              selectedPlatforms={selectedPlatforms}
+              onTogglePlatform={togglePlatform}
+              selectedSentiments={selectedSentiments}
+              onToggleSentiment={toggleSentiment}
+              selectedEmotions={selectedEmotions}
+              onToggleEmotion={toggleEmotion}
+              datePreset={datePreset}
+              onDatePresetChange={setDatePreset}
+              customFrom={customFrom}
+              customTo={customTo}
+              onCustomFromChange={setCustomFrom}
+              onCustomToChange={setCustomTo}
+            />
+          )}
         </div>
       </div>
     </ContentDataContext.Provider>

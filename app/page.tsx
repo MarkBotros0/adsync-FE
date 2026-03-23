@@ -115,7 +115,7 @@ const PLANS = [
     price: '$29',
     description: 'For small brands growing their presence.',
     features: ['3 brands', '5,000 content / mo', '5 pages', 'Full analytics', 'Alerts', 'Instagram', 'Export'],
-    cta: 'Start free trial',
+    cta: 'Get started',
     highlight: false,
   },
   {
@@ -123,7 +123,7 @@ const PLANS = [
     price: '$79',
     description: 'For teams that need AI and full analytics.',
     features: ['10 brands', '50,000 content / mo', '20 pages', 'AI Digest', 'Influencer tracking', 'Instagram & TikTok', 'Reports', '10 team members'],
-    cta: 'Start free trial',
+    cta: 'Get started',
     highlight: true,
   },
 ];

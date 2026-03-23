@@ -5,45 +5,46 @@ import { useRouter } from 'next/navigation';
 import { adminAPI, invitationAPI } from '@/lib/api';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
 import { toast } from 'sonner';
-import { UserCheck, Plus, Mail, Shield, Loader2, X } from 'lucide-react';
-import type { User, UserRole } from '@/lib/types';
+import { Users, Plus, Mail, Building2, Shield, UserCheck, Loader2, X } from 'lucide-react';
+import type { User, Brand, UserRole } from '@/lib/types';
 import { AxiosError } from 'axios';
 
 function getApiError(err: unknown, fallback: string): string {
   return (err as AxiosError<{ detail?: string }>)?.response?.data?.detail ?? fallback;
 }
 
-const ROLE_BADGE: Record<'ADMIN' | 'NORMAL', { label: string; classes: string }> = {
-  ADMIN:  { label: 'Admin',  classes: 'bg-purple-500/20 text-purple-300 border border-purple-500/30' },
-  NORMAL: { label: 'Member', classes: 'bg-white/10 text-white/50 border border-white/10' },
+const ROLE_BADGE: Record<UserRole, { label: string; classes: string }> = {
+  SUPER: { label: 'Super',  classes: 'bg-amber-500/20 text-amber-300 border border-amber-500/30' },
+  ADMIN: { label: 'Admin',  classes: 'bg-purple-500/20 text-purple-300 border border-purple-500/30' },
+  NORMAL:{ label: 'Member', classes: 'bg-white/10 text-white/50 border border-white/10' },
 };
 
 function RoleBadge({ role }: { role: UserRole }) {
-  if (role === 'SUPER') return null;
-  const b = ROLE_BADGE[role];
+  const b = ROLE_BADGE[role] ?? ROLE_BADGE.NORMAL;
   return <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${b.classes}`}>{b.label}</span>;
 }
 
 // ─── Invite Modal ─────────────────────────────────────────────────────────────
 
 function InviteModal({
-  brandId,
+  brands,
   onClose,
   onSent,
   token,
 }: {
-  brandId: number;
+  brands: Brand[];
   onClose: () => void;
   onSent: () => void;
   token: string;
 }) {
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'NORMAL' | 'ADMIN'>('NORMAL');
+  const [brandId, setBrandId] = useState<number>(brands[0]?.id ?? 0);
+  const [role, setRole] = useState<UserRole>('NORMAL');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !brandId) return;
     setLoading(true);
     try {
       await invitationAPI.invite(token, { email, brand_id: brandId, role });
@@ -61,7 +62,7 @@ function InviteModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
       <div className="w-full max-w-md bg-[#1a1a28] border border-white/10 rounded-2xl shadow-2xl p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-white font-semibold text-lg">Invite Team Member</h2>
+          <h2 className="text-white font-semibold text-lg">Invite User</h2>
           <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
             <X className="h-5 w-5" />
           </button>
@@ -78,13 +79,24 @@ function InviteModal({
           </div>
 
           <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Brand</label>
+            <select
+              value={brandId} onChange={e => setBrandId(Number(e.target.value))}
+              className="bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/60"
+            >
+              {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Role</label>
             <select
-              value={role} onChange={e => setRole(e.target.value as 'NORMAL' | 'ADMIN')}
+              value={role} onChange={e => setRole(e.target.value as UserRole)}
               className="bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/60"
             >
               <option value="NORMAL">Member</option>
               <option value="ADMIN">Admin</option>
+              <option value="SUPER">Super</option>
             </select>
           </div>
 
@@ -103,38 +115,43 @@ function InviteModal({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function TeamPage() {
+export default function UsersPage() {
   const auth = useBrandAuthContext();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
 
-  // Guard: ADMIN only
+  // Guard: SUPER only
   useEffect(() => {
-    if (auth.isLoading) return;
-    if (auth.user?.role === 'SUPER') router.replace('/users');
-    else if (auth.user?.role === 'NORMAL') router.replace('/content');
+    if (!auth.isLoading && auth.user?.role !== 'SUPER') {
+      router.replace('/content');
+    }
   }, [auth.isLoading, auth.user, router]);
 
-  const loadTeam = useCallback(async () => {
-    if (!auth.token || !auth.user?.brand_id) return;
+  const loadData = useCallback(async () => {
+    if (!auth.token) return;
     setLoading(true);
     try {
-      const res = await adminAPI.listBrandUsers(auth.token, auth.user.brand_id);
-      setUsers(res.data.users);
+      const [usersRes, brandsRes] = await Promise.all([
+        adminAPI.listUsers(auth.token),
+        adminAPI.listBrands(auth.token),
+      ]);
+      setUsers(usersRes.data.users);
+      setBrands(brandsRes.data.brands);
     } catch {
-      toast.error('Failed to load team members');
+      toast.error('Failed to load users');
     } finally {
       setLoading(false);
     }
-  }, [auth.token, auth.user?.brand_id]);
+  }, [auth.token]);
 
   useEffect(() => {
-    if (auth.token && !auth.isLoading && auth.user?.role === 'ADMIN') loadTeam();
-  }, [auth.token, auth.isLoading, auth.user?.role, loadTeam]);
+    if (auth.token && !auth.isLoading) loadData();
+  }, [auth.token, auth.isLoading, loadData]);
 
-  if (auth.isLoading || auth.user?.role !== 'ADMIN') {
+  if (auth.isLoading || auth.user?.role !== 'SUPER') {
     return <div className="flex items-center justify-center h-full"><Loader2 className="h-7 w-7 animate-spin text-purple-400" /></div>;
   }
 
@@ -144,11 +161,11 @@ export default function TeamPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-purple-600/20 flex items-center justify-center">
-            <UserCheck className="h-5 w-5 text-purple-400" />
+            <Users className="h-5 w-5 text-purple-400" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Team</h1>
-            <p className="text-sm text-white/40">{users.length} member{users.length !== 1 ? 's' : ''}</p>
+            <h1 className="text-xl font-bold text-white">Users</h1>
+            <p className="text-sm text-white/40">{users.length} total across all brands</p>
           </div>
         </div>
         <button
@@ -156,11 +173,11 @@ export default function TeamPage() {
           className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Invite Member
+          Invite User
         </button>
       </div>
 
-      {/* Team table */}
+      {/* Users table */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-7 w-7 animate-spin text-purple-400" />
@@ -168,15 +185,16 @@ export default function TeamPage() {
       ) : users.length === 0 ? (
         <div className="text-center py-20 text-white/30">
           <UserCheck className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p>No team members yet. Invite someone to get started.</p>
+          <p>No users yet. Invite someone to get started.</p>
         </div>
       ) : (
         <div className="bg-white/[0.03] border border-white/8 rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/8">
-                <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide">Member</th>
+                <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide">User</th>
                 <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide">Role</th>
+                <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide hidden md:table-cell">Brand</th>
                 <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide hidden lg:table-cell">Joined</th>
               </tr>
             </thead>
@@ -191,22 +209,18 @@ export default function TeamPage() {
                         </span>
                       </div>
                       <div>
-                        <p className="text-white font-medium flex items-center gap-2">
-                          {user.name}
-                          {user.id === auth.user?.id && (
-                            <span className="text-[10px] text-white/30">(you)</span>
-                          )}
-                        </p>
+                        <p className="text-white font-medium">{user.name}</p>
                         <p className="text-white/40 text-xs">{user.email}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <RoleBadge role={user.role} />
-                      {user.role === 'ADMIN' && (
-                        <Shield className="h-3.5 w-3.5 text-purple-400/50" />
-                      )}
+                    <RoleBadge role={user.role} />
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <div className="flex items-center gap-1.5 text-white/50">
+                      <Building2 className="h-3.5 w-3.5" />
+                      <span>{user.brand?.name ?? '—'}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3 hidden lg:table-cell text-white/40">
@@ -219,12 +233,12 @@ export default function TeamPage() {
         </div>
       )}
 
-      {showInvite && auth.user && (
+      {showInvite && (
         <InviteModal
-          brandId={auth.user.brand_id}
+          brands={brands}
           token={auth.token!}
           onClose={() => setShowInvite(false)}
-          onSent={loadTeam}
+          onSent={loadData}
         />
       )}
     </div>

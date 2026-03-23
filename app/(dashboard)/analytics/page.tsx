@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { StatsBar } from '@/components/content/StatsBar';
 import { VolumeReachChart } from '@/components/charts/VolumeReachChart';
 import { SentimentTimelineChart } from '@/components/charts/SentimentTimelineChart';
@@ -193,7 +194,16 @@ export default function AnalyticsPage() {
     datePreset, customFrom, customTo,
     selectedPlatforms, selectedSentiments, selectedEmotions,
   } = useFilters();
-  const { mentions: allMentions, loading } = useContentData();
+  const { mentions: allMentions, loading, reload } = useContentData();
+  const [reloading, setReloading] = useState(false);
+
+  const handleReload = () => {
+    setReloading(true);
+    reload();
+    setTimeout(() => setReloading(false), 800);
+  };
+
+  const spinning = loading || reloading;
 
   const filtered = useMemo(() => {
     const { from, to } = getDateRange(datePreset, customFrom, customTo);
@@ -240,6 +250,19 @@ export default function AnalyticsPage() {
   return (
     <div className="flex flex-col h-full">
       <StatsBar stats={stats} />
+
+      <div className="bg-white dark:bg-dk-surface border-b border-slate-200 dark:border-dk-border px-5 py-2.5 flex items-center">
+        <div className="ml-auto">
+          <button
+            onClick={handleReload}
+            disabled={spinning}
+            className="flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium transition-colors disabled:opacity-60"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${spinning ? 'animate-spin' : ''}`} />
+            Reload Data
+          </button>
+        </div>
+      </div>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-slate-50 dark:bg-dk-bg">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

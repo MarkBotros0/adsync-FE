@@ -2,14 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { subscriptionsAPI } from '@/lib/api';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
-import { BarChart3, Eye, EyeOff, Loader2, Check, ArrowLeft, TrendingUp, Shield, Zap } from 'lucide-react';
+import { BarChart3, Eye, EyeOff, Loader2, ArrowLeft, TrendingUp, Shield, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { AxiosError } from 'axios';
-import type { Subscription } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 function getApiErrorMessage(err: unknown, fallback: string): string {
@@ -61,42 +59,6 @@ function Field({
   );
 }
 
-// ─── Compact plan pill ─────────────────────────────────────────────────────────
-
-const PLAN_ACCENT: Record<string, { ring: string; badge: string; dot: string }> = {
-  free:    { ring: 'ring-white/20',    badge: 'bg-white/10 text-white/50',         dot: 'bg-white/40' },
-  starter: { ring: 'ring-purple-500',  badge: 'bg-purple-600/30 text-purple-300',   dot: 'bg-purple-400' },
-  pro:     { ring: 'ring-indigo-500',  badge: 'bg-indigo-600/30 text-indigo-300',   dot: 'bg-indigo-400' },
-};
-
-function PlanPill({ plan, selected, onSelect }: { plan: Subscription; selected: boolean; onSelect: () => void }) {
-  const accent = PLAN_ACCENT[plan.name] ?? PLAN_ACCENT.free;
-  const price = plan.price_monthly === 0
-    ? 'Free'
-    : `$${(plan.price_monthly / 100).toFixed(0)}/mo`;
-
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        'relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border transition-all duration-150 text-center',
-        selected
-          ? `bg-white/10 border-transparent ring-2 ${accent.ring}`
-          : 'bg-white/5 border-white/8 hover:bg-white/8 hover:border-white/15',
-      )}
-    >
-      {selected && (
-        <div className={cn('absolute top-2 right-2 h-3.5 w-3.5 rounded-full flex items-center justify-center', accent.dot)}>
-          <Check className="h-2 w-2 text-white" />
-        </div>
-      )}
-      <span className="text-xs font-bold text-white">{plan.display_name}</span>
-      <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', accent.badge)}>{price}</span>
-    </button>
-  );
-}
-
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
@@ -116,8 +78,6 @@ export default function LoginPage() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirm, setSignupConfirm] = useState('');
-  const [signupPlan, setSignupPlan] = useState('free');
-  const [plans, setPlans] = useState<Subscription[]>([]);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
@@ -133,14 +93,6 @@ export default function LoginPage() {
       router.push(`/connect?session_id=${session}`);
     }
   }, [searchParams, router]);
-
-  useEffect(() => {
-    if (tab === 'signup' && plans.length === 0) {
-      subscriptionsAPI.list()
-        .then(r => setPlans(r.data.subscriptions))
-        .catch(() => {});
-    }
-  }, [tab, plans.length]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,7 +115,7 @@ export default function LoginPage() {
     if (signupPassword.length < 8) { toast.error('Password must be at least 8 characters'); return; }
     setLoading(true);
     try {
-      await auth.register({ name: signupName, email: signupEmail, password: signupPassword, subscription_name: signupPlan });
+      await auth.register({ name: signupName, email: signupEmail, password: signupPassword });
       toast.success(`Welcome to AdSync, ${signupName}!`);
       router.push('/content');
     } catch (err: unknown) {
@@ -307,13 +259,13 @@ export default function LoginPage() {
                 <form onSubmit={handleSignup} className="flex flex-col gap-4">
                   <div className="mb-1">
                     <h2 className="text-xl font-bold text-white">Create your account</h2>
-                    <p className="text-sm text-white/40 mt-1">Start monitoring your brand today</p>
+                    <p className="text-sm text-white/40 mt-1">Set up your brand workspace</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2">
-                      <Field label="Brand name" value={signupName} onChange={setSignupName}
-                        placeholder="Acme Inc." autoComplete="organization" required />
+                      <Field label="Your name" value={signupName} onChange={setSignupName}
+                        placeholder="Jane Smith" autoComplete="name" required />
                     </div>
                     <div className="col-span-2">
                       <Field label="Email" type="email" value={signupEmail} onChange={setSignupEmail}
@@ -324,24 +276,6 @@ export default function LoginPage() {
                     <Field label="Confirm" type="password" value={signupConfirm} onChange={setSignupConfirm}
                       placeholder="Repeat password" autoComplete="new-password" required />
                   </div>
-
-                  {/* Compact plan picker — 2×2 grid */}
-                  {plans.length > 0 && (
-                    <div className="flex flex-col gap-2 mt-1">
-                      <p className="text-xs font-medium uppercase tracking-wide text-white/40">Choose a plan</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {plans.map(plan => (
-                          <PlanPill
-                            key={plan.name}
-                            plan={plan}
-                            selected={signupPlan === plan.name}
-                            onSelect={() => setSignupPlan(plan.name)}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-[10px] text-white/25 text-center">You can change your plan anytime after signing up</p>
-                    </div>
-                  )}
 
                   <Button type="submit" disabled={loading}
                     className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg shadow-lg shadow-purple-900/40 transition-all mt-1"

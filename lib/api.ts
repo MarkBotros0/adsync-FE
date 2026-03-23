@@ -6,7 +6,7 @@ import type {
   PostsResponse,
   AdInsights,
   ApiResponse,
-  BrandSession,
+  UserSession,
   BrandValidateResponse,
   Subscription,
   IGMediaList,
@@ -25,6 +25,13 @@ import type {
   BrandRegisterPayload,
   BrandLoginPayload,
   ContentFeedResponse,
+  InvitePayload,
+  AcceptInvitePayload,
+  InviteVerifyResponse,
+  Invitation,
+  AdminUsersResponse,
+  AdminBrandsResponse,
+  CreateBrandPayload,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -153,13 +160,13 @@ function _brandAuthHeaders(token: string) {
 }
 
 export const brandAuthAPI = {
-  register: (payload: BrandRegisterPayload): Promise<AxiosResponse<BrandSession>> =>
-    api.post<BrandSession>('/brands/register', payload),
+  register: (payload: BrandRegisterPayload): Promise<AxiosResponse<UserSession>> =>
+    api.post<UserSession>('/brands/register', payload),
 
-  login: (payload: BrandLoginPayload): Promise<AxiosResponse<BrandSession>> =>
-    api.post<BrandSession>('/brands/login', payload),
+  login: (payload: BrandLoginPayload): Promise<AxiosResponse<UserSession>> =>
+    api.post<UserSession>('/brands/login', payload),
 
-  me: (token: string): Promise<AxiosResponse<{ success: boolean; brand: BrandSession['brand'] }>> =>
+  me: (token: string): Promise<AxiosResponse<{ success: boolean; user: UserSession['user'] }>> =>
     api.get('/brands/me', { headers: _brandAuthHeaders(token) }),
 
   /** Called every 5 s by the frontend to validate the JWT and session_key. */
@@ -170,7 +177,7 @@ export const brandAuthAPI = {
     api.post('/brands/logout', {}, { headers: _brandAuthHeaders(token) }),
 
   /** Rotates the server-side session key, invalidating all other sessions. */
-  forceSignOut: (token: string): Promise<AxiosResponse<BrandSession & { message: string }>> =>
+  forceSignOut: (token: string): Promise<AxiosResponse<{ success: boolean; message: string; access_token: string; token_type: string }>> =>
     api.post('/brands/force-signout', {}, { headers: _brandAuthHeaders(token) }),
 };
 
@@ -386,6 +393,42 @@ export const contentFeedAPI = {
       headers: _brandAuthHeaders(brandToken),
       params: options,
     }),
+};
+
+// ─── Invitation API ───────────────────────────────────────────────────────────
+
+export const invitationAPI = {
+  /** Send an invitation email (SUPER or ADMIN). */
+  invite: (token: string, payload: InvitePayload): Promise<AxiosResponse<{ success: boolean; message: string; invitation: Invitation }>> =>
+    api.post('/brands/invite', payload, { headers: _brandAuthHeaders(token) }),
+
+  /** Verify an invitation token is still valid (public). */
+  verify: (inviteToken: string): Promise<AxiosResponse<InviteVerifyResponse>> =>
+    api.get('/brands/invite/verify', { params: { token: inviteToken } }),
+
+  /** Accept an invitation and create an account (public). */
+  accept: (payload: AcceptInvitePayload): Promise<AxiosResponse<UserSession>> =>
+    api.post<UserSession>('/brands/invite/accept', payload),
+};
+
+// ─── Admin API (SUPER only) ───────────────────────────────────────────────────
+
+export const adminAPI = {
+  /** List all users across all brands. */
+  listUsers: (token: string): Promise<AxiosResponse<AdminUsersResponse>> =>
+    api.get<AdminUsersResponse>('/admin/users', { headers: _brandAuthHeaders(token) }),
+
+  /** List all brands. */
+  listBrands: (token: string): Promise<AxiosResponse<AdminBrandsResponse>> =>
+    api.get<AdminBrandsResponse>('/admin/brands', { headers: _brandAuthHeaders(token) }),
+
+  /** Create a new brand. */
+  createBrand: (token: string, payload: CreateBrandPayload): Promise<AxiosResponse<{ success: boolean; brand: import('./types').Brand }>> =>
+    api.post('/admin/brands', payload, { headers: _brandAuthHeaders(token) }),
+
+  /** List users for a specific brand. */
+  listBrandUsers: (token: string, brandId: number): Promise<AxiosResponse<{ success: boolean; brand: import('./types').Brand; total: number; users: import('./types').User[] }>> =>
+    api.get(`/admin/brands/${brandId}/users`, { headers: _brandAuthHeaders(token) }),
 };
 
 export default api;
