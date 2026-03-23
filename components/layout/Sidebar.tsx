@@ -20,7 +20,7 @@ import {
   LogOut,
   Plug,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FacebookPage, UserRole } from '@/lib/types';
 import { useSidebar } from '@/contexts/sidebar-context';
 
@@ -71,6 +71,13 @@ export function Sidebar({
 
   const isSuper = userRole === 'SUPER';
   const isAdmin = userRole === 'ADMIN';
+  
+  // Prevent hydration mismatch by only showing role-specific UI after mount
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Build nav items based on role
   const mainNav = isSuper
@@ -166,7 +173,7 @@ export function Sidebar({
         )}
 
         {/* SUPER role header */}
-        {isSuper && (
+        {mounted && isSuper && (
           <div className={`px-4 pt-5 pb-3 border-b border-white/8 ${isCollapsed ? 'lg:px-2' : ''}`}>
             <div className={`flex items-center gap-2 px-3 py-2 ${isCollapsed ? 'lg:justify-center lg:px-2' : ''}`}>
               <span className="h-2.5 w-2.5 rounded-full bg-amber-400 shrink-0" />
