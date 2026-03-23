@@ -225,9 +225,14 @@ export default function AnalyticsPage() {
   }
 
   if (!stats) {
+    const hasConnectedData = allMentions.length > 0;
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500 dark:text-purple-400">
-        <p className="text-sm">No data available. Connect a platform to see analytics.</p>
+        <p className="text-sm">
+          {hasConnectedData
+            ? 'No data matches the current filters.'
+            : 'No data available. Connect a platform to see analytics.'}
+        </p>
       </div>
     );
   }
