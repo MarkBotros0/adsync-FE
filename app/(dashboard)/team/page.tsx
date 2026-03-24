@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { adminAPI, invitationAPI } from '@/lib/api';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
 import { toast } from 'sonner';
-import { UserCheck, Plus, Mail, Shield, Loader2, X } from 'lucide-react';
-import { type User, UserRole } from '@/lib/types';
+import { UserCheck, Plus, Mail, Shield, Loader2, X, Clock, Trash2 } from 'lucide-react';
+import { type User, type Invitation, UserRole } from '@/lib/types';
 import { AxiosError } from 'axios';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -110,9 +110,11 @@ export default function TeamPage() {
   const auth = useBrandAuthContext();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -124,21 +126,42 @@ export default function TeamPage() {
   }, [auth.isLoading, auth.user, router]);
 
   const loadTeam = useCallback(async () => {
-    if (!auth.token || !auth.user?.brand_id) return;
+    if (!auth.token || !auth.user?.brand?.id) return;
     setLoading(true);
     try {
-      const res = await adminAPI.listBrandUsers(auth.token, auth.user.brand_id);
+      const res = await adminAPI.listBrandUsers(auth.token, auth.user.brand.id);
       setUsers(res.data.users.filter((u: User) => u.id !== auth.user!.id));
     } catch {
       toast.error('Failed to load team members');
     } finally {
       setLoading(false);
     }
-  }, [auth.token, auth.user?.brand_id]);
+
+    try {
+      const invRes = await adminAPI.listBrandInvitations(auth.token, auth.user.brand.id);
+      setInvitations(invRes.data.invitations);
+    } catch {
+      toast.error('Failed to load invitations');
+    }
+  }, [auth.token, auth.user?.brand?.id]);
 
   useEffect(() => {
     if (auth.token && !auth.isLoading && auth.user?.role === UserRole.ADMIN) loadTeam();
   }, [auth.token, auth.isLoading, auth.user?.role, loadTeam]);
+
+  const handleDeleteInvitation = async (id: number) => {
+    if (!auth.token) return;
+    setDeletingId(id);
+    try {
+      await invitationAPI.delete(auth.token, id);
+      setInvitations(prev => prev.filter(inv => inv.id !== id));
+      toast.success('Invitation deleted');
+    } catch (err) {
+      toast.error(getApiError(err, 'Failed to delete invitation'));
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (!mounted || auth.isLoading || auth.user?.role !== UserRole.ADMIN) {
     return <div className="flex items-center justify-center h-full"><Loader2 className="h-7 w-7 animate-spin text-purple-400" /></div>;
@@ -166,68 +189,128 @@ export default function TeamPage() {
         </button>
       </div>
 
-      {/* Team table */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-7 w-7 animate-spin text-purple-400" />
         </div>
-      ) : users.length === 0 ? (
-        <div className="text-center py-20 text-white/30">
-          <UserCheck className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p>No team members yet. Invite someone to get started.</p>
-        </div>
       ) : (
-        <div className="bg-white/[0.03] border border-white/8 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-white/8">
-                <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide">Member</th>
-                <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide">Role</th>
-                <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide hidden lg:table-cell">Joined</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {users.map(user => (
-                <tr key={user.id} className="hover:bg-white/[0.02] transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-purple-600/20 flex items-center justify-center shrink-0">
-                        <span className="text-xs font-bold text-purple-300">
-                          {user.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-white font-medium flex items-center gap-2">
-                          {user.name}
-                          {user.id === auth.user?.id && (
-                            <span className="text-[10px] text-white/30">(you)</span>
+        <>
+          {/* Team table */}
+          {users.length === 0 ? (
+            <div className="text-center py-20 text-white/30">
+              <UserCheck className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p>No team members yet. Invite someone to get started.</p>
+            </div>
+          ) : (
+            <div className="bg-white/[0.03] border border-white/8 rounded-xl overflow-hidden mb-8">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/8">
+                    <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide">Member</th>
+                    <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide">Role</th>
+                    <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide hidden lg:table-cell">Joined</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {users.map(user => (
+                    <tr key={user.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-purple-600/20 flex items-center justify-center shrink-0">
+                            <span className="text-xs font-bold text-purple-300">
+                              {user.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-white font-medium flex items-center gap-2">
+                              {user.name}
+                              {user.id === auth.user?.id && (
+                                <span className="text-[10px] text-white/30">(you)</span>
+                              )}
+                            </p>
+                            <p className="text-white/40 text-xs">{user.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <RoleBadge role={user.role} />
+                          {user.role === UserRole.ADMIN && (
+                            <Shield className="h-3.5 w-3.5 text-purple-400/50" />
                           )}
-                        </p>
-                        <p className="text-white/40 text-xs">{user.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <RoleBadge role={user.role} />
-                      {user.role === UserRole.ADMIN && (
-                        <Shield className="h-3.5 w-3.5 text-purple-400/50" />
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 hidden lg:table-cell text-white/40">
-                    {new Date(user.created_at).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell text-white/40">
+                        {new Date(user.created_at).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Pending Invitations */}
+          <div>
+            <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Pending Invitations ({invitations.length})
+            </h2>
+            {invitations.length === 0 ? (
+              <div className="bg-white/[0.03] border border-white/8 rounded-xl px-4 py-8 text-center text-white/30 text-sm">
+                No pending invitations.
+              </div>
+            ) : (
+              <div className="bg-white/[0.03] border border-white/8 rounded-xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/8">
+                      <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide">Email</th>
+                      <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide">Role</th>
+                      <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide hidden lg:table-cell">Expires</th>
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {invitations.map(inv => (
+                      <tr key={inv.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3.5 w-3.5 text-white/30 shrink-0" />
+                            <span className="text-white/70">{inv.email}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <RoleBadge role={inv.role} />
+                        </td>
+                        <td className="px-4 py-3 hidden lg:table-cell text-white/40">
+                          {new Date(inv.expires_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => handleDeleteInvitation(inv.id)}
+                            disabled={deletingId === inv.id}
+                            className="text-white/30 hover:text-red-400 transition-colors disabled:opacity-40"
+                            aria-label="Delete invitation"
+                          >
+                            {deletingId === inv.id
+                              ? <Loader2 className="h-4 w-4 animate-spin" />
+                              : <Trash2 className="h-4 w-4" />}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {showInvite && auth.user && (
         <InviteModal
-          brandId={auth.user.brand_id}
+          brandId={auth.user.brand?.id ?? 0}
           token={auth.token!}
           onClose={() => setShowInvite(false)}
           onSent={loadTeam}

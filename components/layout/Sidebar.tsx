@@ -80,12 +80,13 @@ export function Sidebar({
   }, []);
 
   // Build nav items based on role — gated on `mounted` to avoid hydration mismatch
-  // (userRole is client-side data; server always sees null)
+  // (userRole is client-side data; server always sees null).
+  // Before mount, render an empty nav so super users don't see a flash of non-super tabs.
   const mainNav = mounted
     ? (isSuper ? superNav : isAdmin ? [...primaryNav, teamNav] : primaryNav)
-    : primaryNav;
+    : [];
 
-  const showSecondaryNav = mounted ? !isSuper : true;
+  const showSecondaryNav = mounted && !isSuper;
 
   const NavLink = ({ item }: { item: { name: string; href: string; icon: React.ElementType; badge?: string } }) => {
     const active = isActive(item.href);
@@ -172,7 +173,7 @@ export function Sidebar({
         )}
 
         {/* SUPER role header */}
-        {mounted && isSuper && (
+        {isSuper && (
           <div className={`px-4 pt-5 pb-3 border-b border-white/8 ${isCollapsed ? 'lg:px-2' : ''}`}>
             <div className={`flex items-center gap-2 px-3 py-2 ${isCollapsed ? 'lg:justify-center lg:px-2' : ''}`}>
               <span className="h-2.5 w-2.5 rounded-full bg-amber-400 shrink-0" />

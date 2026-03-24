@@ -29,6 +29,7 @@ import type {
   AcceptInvitePayload,
   InviteVerifyResponse,
   Invitation,
+  AdminInvitationsResponse,
   AdminUsersResponse,
   AdminBrandsResponse,
   CreateBrandPayload,
@@ -409,6 +410,10 @@ export const invitationAPI = {
   /** Accept an invitation and create an account (public). */
   accept: (payload: AcceptInvitePayload): Promise<AxiosResponse<UserSession>> =>
     api.post<UserSession>('/brands/invite/accept', payload),
+
+  /** Delete a pending invitation (ADMIN or SUPER). */
+  delete: (token: string, invitationId: number): Promise<AxiosResponse<{ success: boolean; message: string }>> =>
+    api.delete(`/brands/invite/${invitationId}`, { headers: _brandAuthHeaders(token) }),
 };
 
 // ─── Admin API (SUPER only) ───────────────────────────────────────────────────
@@ -429,6 +434,14 @@ export const adminAPI = {
   /** List users for a specific brand. */
   listBrandUsers: (token: string, brandId: number): Promise<AxiosResponse<{ success: boolean; brand: import('./types').Brand; total: number; users: import('./types').User[] }>> =>
     api.get(`/admin/brands/${brandId}/users`, { headers: _brandAuthHeaders(token) }),
+
+  /** List all pending invitations across all brands (SUPER only). */
+  listInvitations: (token: string): Promise<AxiosResponse<AdminInvitationsResponse>> =>
+    api.get<AdminInvitationsResponse>('/admin/invitations', { headers: _brandAuthHeaders(token) }),
+
+  /** List pending invitations for a specific brand. */
+  listBrandInvitations: (token: string, brandId: number): Promise<AxiosResponse<AdminInvitationsResponse>> =>
+    api.get<AdminInvitationsResponse>(`/admin/brands/${brandId}/invitations`, { headers: _brandAuthHeaders(token) }),
 };
 
 export default api;

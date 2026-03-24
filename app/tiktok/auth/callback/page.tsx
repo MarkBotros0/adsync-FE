@@ -28,7 +28,7 @@ export default function TikTokCallbackPage() {
       try {
         const response = await oauthCallbackAPI.tiktokCallback(code, state);
         if (response.data.success) {
-          router.push('/connect?connected=tiktok');
+          router.push('/content');
         } else {
           router.push('/connect?error=no_session');
         }

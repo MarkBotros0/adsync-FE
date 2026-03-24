@@ -18,7 +18,7 @@ export interface BrandAuthState {
 }
 
 export interface UseBrandAuth extends BrandAuthState {
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   register: (payload: {
     name: string;
     email: string;
@@ -139,7 +139,7 @@ export function useBrandAuth(): UseBrandAuth {
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<User> => {
     const res = await brandAuthAPI.login({ email, password });
     const { access_token, user } = res.data as unknown as UserSession;
     saveSession(access_token, user);
@@ -153,6 +153,7 @@ export function useBrandAuth(): UseBrandAuth {
       subscription: (user.brand?.subscription?.name as SubscriptionName) ?? 'free',
     });
     startPolling(access_token);
+    return user;
   }, [startPolling]);
 
   const register = useCallback(async (payload: Parameters<typeof brandAuthAPI.register>[0]) => {

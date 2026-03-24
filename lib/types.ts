@@ -335,8 +335,7 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
-  brand_id: number;
-  brand: Brand;
+  brand: Brand | null;
   is_active: boolean;
   is_email_verified: boolean;
   created_at: string;
@@ -628,6 +627,12 @@ export interface InviteVerifyResponse {
 }
 
 // ─── Admin Types ──────────────────────────────────────────────────────────────
+
+export interface AdminInvitationsResponse {
+  success: boolean;
+  total: number;
+  invitations: Invitation[];
+}
 
 export interface AdminUsersResponse {
   success: boolean;
