@@ -159,11 +159,6 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const data = await auth.login(loginEmail, loginPassword);
-      if (data.requires_brand_selection) {
-        // Handled by login page — redirect to brand selection (future enhancement)
-        toast.success('Welcome back! Please select a brand.');
-        return;
-      }
       toast.success('Welcome back!');
       const role = data.user?.role;
       if (role === UserRole.SUPER) router.push('/users');

@@ -147,8 +147,28 @@ export function useBrandAuth(): UseBrandAuth {
     const res = await brandAuthAPI.login({ email, password });
     const data = res.data as unknown as UserSession;
 
-    // Brand selection required — return raw data so the login page can handle it
+    // Brand selection required — auto-select the first brand
     if (data.requires_brand_selection) {
+      const firstBrand = data.brands?.[0];
+      if (firstBrand && data.selection_token) {
+        const switchRes = await brandAuthAPI.switchBrand(data.selection_token, firstBrand.id);
+        const switched = switchRes.data as unknown as UserSession;
+        const { access_token, user } = switched;
+        saveSession(access_token, user);
+        tokenRef.current = access_token;
+        setState({
+          user,
+          brand: user.brand ?? null,
+          token: access_token,
+          isLoading: false,
+          isAuthenticated: true,
+          subscription: (user.brand?.subscription?.name as SubscriptionName) ?? 'free',
+          accessibleBrands: data.brands ?? [],
+          requiresBrandCreation: false,
+        });
+        startPolling(access_token);
+        return switched;
+      }
       return data;
     }
 
