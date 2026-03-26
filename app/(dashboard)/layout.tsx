@@ -45,10 +45,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [contentLoading, setContentLoading]   = useState(false);
   const [contentLoaded, setContentLoaded]     = useState(false);
   const fetchingRef = useRef(false);
+  const loadedBrandIdRef = useRef<number | null | undefined>(undefined);
 
   const router = useRouter();
   const pathname = usePathname();
   const auth = useBrandAuthContext();
+
+  const brandId = auth.brand?.id ?? null;
 
   const dateLabel = datePreset === 'custom' ? 'Custom range' : (DATE_PRESETS.find(p => p.key === datePreset)?.label ?? 'Last 3 months');
   const activeFilterCount =
@@ -118,6 +121,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     loadSessions();
   }, [auth.token, auth.isLoading, loadSessions]);
 
+  // Reset content cache when the user switches to a different brand
+  useEffect(() => {
+    if (loadedBrandIdRef.current !== undefined && loadedBrandIdRef.current !== brandId) {
+      setContentLoaded(false);
+      setMentions([]);
+      setContentStats(null);
+      setTotalPosts(0);
+      setPostsByPlatform({});
+      fetchingRef.current = false;
+    }
+    loadedBrandIdRef.current = brandId;
+  }, [brandId]);
+
   // ── Unified content fetch ─────────────────────────────────────────────────
   const loadContent = useCallback(async () => {
     if (!auth.token || fetchingRef.current) return;
@@ -183,12 +199,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
-  // Redirect to login when auth has finished loading and there's no valid session
+  // Redirect to login when auth has finished loading and there's no valid session.
+  // If authenticated but no brand created yet, redirect to brand creation.
   useEffect(() => {
-    if (!auth.isLoading && !auth.isAuthenticated) {
+    if (auth.isLoading) return;
+    if (!auth.isAuthenticated) {
       router.replace('/login');
+    } else if (auth.requiresBrandCreation && pathname !== '/brands') {
+      router.replace('/brands');
     }
-  }, [auth.isLoading, auth.isAuthenticated, router]);
+  }, [auth.isLoading, auth.isAuthenticated, auth.requiresBrandCreation, pathname, router]);
 
   const handleLogout = async () => {
     try { await auth.logout(); } catch {}

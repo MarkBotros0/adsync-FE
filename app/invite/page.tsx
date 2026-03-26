@@ -135,14 +135,25 @@ function InvitePageInner() {
         </Link>
 
         {/* Invite info banner */}
-        <div className="bg-white/[0.04] border border-white/8 rounded-xl px-4 py-3.5 mb-6">
-          <p className="text-xs text-white/40 mb-0.5">You were invited to join</p>
-          <p className="text-white font-semibold">{invite.brand_name ?? 'a brand'}</p>
-          <p className="text-xs text-white/30 mt-1">
-            as <span className="capitalize">{invite.role.toLowerCase()}</span>
-            {hoursLeft > 0 && ` · expires in ${hoursLeft}h`}
-          </p>
-        </div>
+        {invite.role === 'ORG_ADMIN' ? (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3.5 mb-6">
+            <p className="text-xs text-amber-300/60 mb-0.5">You were invited as an Admin of</p>
+            <p className="text-white font-semibold">{invite.org_name ?? 'an organization'}</p>
+            <p className="text-xs text-amber-300/50 mt-1">
+              Full access to all brands
+              {hoursLeft > 0 && ` · expires in ${hoursLeft}h`}
+            </p>
+          </div>
+        ) : (
+          <div className="bg-white/[0.04] border border-white/8 rounded-xl px-4 py-3.5 mb-6">
+            <p className="text-xs text-white/40 mb-0.5">You were invited to join</p>
+            <p className="text-white font-semibold">{invite.brand_name ?? 'a brand'}</p>
+            <p className="text-xs text-white/30 mt-1">
+              as Member
+              {hoursLeft > 0 && ` · expires in ${hoursLeft}h`}
+            </p>
+          </div>
+        )}
 
         {/* Form */}
         <div className="bg-white/[0.04] border border-white/8 rounded-2xl p-6 shadow-2xl shadow-black/40">

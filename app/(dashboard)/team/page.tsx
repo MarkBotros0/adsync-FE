@@ -14,14 +14,15 @@ function getApiError(err: unknown, fallback: string): string {
   return (err as AxiosError<{ detail?: string }>)?.response?.data?.detail ?? fallback;
 }
 
-const ROLE_BADGE: Record<UserRole.ADMIN | UserRole.NORMAL, { label: string; classes: string }> = {
-  ADMIN:  { label: 'Admin',  classes: 'bg-purple-500/20 text-purple-300 border border-purple-500/30' },
-  NORMAL: { label: 'Member', classes: 'bg-white/10 text-white/50 border border-white/10' },
+const ROLE_BADGE: Record<string, { label: string; classes: string }> = {
+  ORG_ADMIN: { label: 'Admin',  classes: 'bg-amber-500/20 text-amber-300 border border-amber-500/30' },
+  ADMIN:     { label: 'Admin',  classes: 'bg-purple-500/20 text-purple-300 border border-purple-500/30' },
+  NORMAL:    { label: 'Member', classes: 'bg-white/10 text-white/50 border border-white/10' },
 };
 
 function RoleBadge({ role }: { role: UserRole }) {
   if (role === UserRole.SUPER) return null;
-  const b = ROLE_BADGE[role];
+  const b = ROLE_BADGE[role] ?? ROLE_BADGE.NORMAL;
   return <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${b.classes}`}>{b.label}</span>;
 }
 
@@ -39,15 +40,21 @@ function InviteModal({
   token: string;
 }) {
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<UserRole.NORMAL | UserRole.ADMIN>(UserRole.NORMAL);
+  const [role, setRole] = useState<UserRole.NORMAL | UserRole.ORG_ADMIN>(UserRole.NORMAL);
   const [loading, setLoading] = useState(false);
+
+  const isOrgAdminInvite = role === UserRole.ORG_ADMIN;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     setLoading(true);
     try {
-      await invitationAPI.invite(token, { email, brand_id: brandId, role });
+      await invitationAPI.invite(token, {
+        email,
+        role,
+        ...(isOrgAdminInvite ? {} : { brand_id: brandId }),
+      });
       toast.success(`Invitation sent to ${email}`);
       onSent();
       onClose();
@@ -80,16 +87,22 @@ function InviteModal({
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Role</label>
-            <Select value={role} onValueChange={(v) => setRole(v as UserRole.NORMAL | UserRole.ADMIN)}>
+            <Select value={role} onValueChange={(v) => setRole(v as UserRole.NORMAL | UserRole.ORG_ADMIN)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="NORMAL">Member</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
+                <SelectItem value={UserRole.NORMAL}>Member — access to current brand only</SelectItem>
+                <SelectItem value={UserRole.ORG_ADMIN}>Admin — access to all brands</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {isOrgAdminInvite && (
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5 text-xs text-amber-300/80">
+              This person will have admin access to all brands in your organization.
+            </div>
+          )}
 
           <button
             type="submit" disabled={loading}
@@ -146,7 +159,7 @@ export default function TeamPage() {
   }, [auth.token, auth.user?.brand?.id]);
 
   useEffect(() => {
-    if (auth.token && !auth.isLoading && auth.user?.role === UserRole.ADMIN) loadTeam();
+    if (auth.token && !auth.isLoading && (auth.user?.role === UserRole.ADMIN || auth.user?.role === UserRole.ORG_ADMIN)) loadTeam();
   }, [auth.token, auth.isLoading, auth.user?.role, loadTeam]);
 
   const handleDeleteInvitation = async (id: number) => {
@@ -163,7 +176,7 @@ export default function TeamPage() {
     }
   };
 
-  if (!mounted || auth.isLoading || auth.user?.role !== UserRole.ADMIN) {
+  if (!mounted || auth.isLoading || (auth.user?.role !== UserRole.ADMIN && auth.user?.role !== UserRole.ORG_ADMIN)) {
     return <div className="flex items-center justify-center h-full"><Loader2 className="h-7 w-7 animate-spin text-purple-400" /></div>;
   }
 

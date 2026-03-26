@@ -28,7 +28,7 @@ export default function FacebookCallbackPage() {
       try {
         const response = await oauthCallbackAPI.facebookCallback(code, state);
         if (response.data.success && response.data.session_id) {
-          router.push('/content');
+          router.push('/connect');
         } else {
           router.push('/login?error=no_session');
         }

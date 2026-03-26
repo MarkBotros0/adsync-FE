@@ -1,5 +1,51 @@
 # Frontend (ad-sync-fe) — Claude Notes
 
+## Architecture — Multi-Tenant Organization Model
+
+### Entity Hierarchy
+
+```
+SUPER (internal app admin)
+└── Organization  (the marketing agency)
+      ├── ORG_ADMIN users  → see all brands, manage users, create brands
+      └── Brands
+            └── NORMAL users  → see only brands they are invited to
+```
+
+### User Roles & What They See
+
+| Role | Brand Switcher | Can manage users? | Can create brands? |
+|---|---|---|---|
+| `SUPER` | All orgs/brands | Yes (everything) | Yes |
+| `ORG_ADMIN` | All brands in their org | Yes (within org) | Yes (up to subscription limit) |
+| `NORMAL` | Only invited brands | No | No |
+
+### Auth State (`BrandAuthContext`)
+
+The JWT embeds `org_id`, `brand_id`, and `role`. After login:
+- `ORG_ADMIN` or `NORMAL` with one brand → JWT issued, redirect to dashboard
+- Any user with multiple brands → brand selection screen shown first
+
+### Brand Switcher
+
+- Fetched from `GET /auth/my-brands` after login — returns only brands the user can access
+- ORG_ADMIN gets all org brands; NORMAL gets only their invited brands
+- Selecting a brand calls `POST /auth/switch-brand` → new JWT → page refresh with new brand context
+
+### Registration
+
+`POST /auth/register` — takes `org_name`, `name`, `email`, `password`.
+Creates an Organization + first ORG_ADMIN. No brand is created at signup.
+After registration, admin is prompted to create their first brand.
+
+### Route Guards
+
+- All `/(dashboard)/*` routes require a valid JWT with a `brand_id`.
+- If `brand_id` is null (no brand created yet), redirect to a "Create your first brand" page.
+- Brand-specific API calls are rejected 403 by the backend if the user doesn't have access — handle with a redirect to `/unauthorized`.
+
+---
+
 ## Responsive Design
 
 The design must be **100% responsive**. All features must be fully available and functional on:

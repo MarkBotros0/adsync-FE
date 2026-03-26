@@ -121,6 +121,7 @@ export default function LoginPage() {
   // ── Sign-up state (2-step) ─────────────────────────────────────────────────
   const [signupStep, setSignupStep] = useState<1 | 2>(1);
   const [selectedPlan, setSelectedPlan] = useState<string>('starter');
+  const [signupOrgName, setSignupOrgName] = useState('');
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
@@ -130,9 +131,11 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (auth.isAuthenticated && !auth.isLoading) {
-      router.replace(auth.user?.role === UserRole.SUPER ? '/users' : '/content');
+      if (auth.user?.role === UserRole.SUPER) router.replace('/users');
+      else if (auth.requiresBrandCreation) router.replace('/brands');
+      else router.replace('/content');
     }
-  }, [auth.isAuthenticated, auth.isLoading, auth.user?.role, router]);
+  }, [auth.isAuthenticated, auth.isLoading, auth.user?.role, auth.requiresBrandCreation, router]);
 
   useEffect(() => {
     const session = searchParams.get('session_id');
@@ -155,9 +158,17 @@ export default function LoginPage() {
     if (!loginEmail || !loginPassword) return;
     setLoading(true);
     try {
-      const user = await auth.login(loginEmail, loginPassword);
+      const data = await auth.login(loginEmail, loginPassword);
+      if (data.requires_brand_selection) {
+        // Handled by login page — redirect to brand selection (future enhancement)
+        toast.success('Welcome back! Please select a brand.');
+        return;
+      }
       toast.success('Welcome back!');
-      router.push(user.role === UserRole.SUPER ? '/users' : '/content');
+      const role = data.user?.role;
+      if (role === UserRole.SUPER) router.push('/users');
+      else if (auth.requiresBrandCreation) router.push('/brands');
+      else router.push('/content');
     } catch (err: unknown) {
       toast.error(getApiErrorMessage(err, 'Login failed. Check your credentials.'));
     } finally {
@@ -167,18 +178,20 @@ export default function LoginPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!signupOrgName.trim()) { toast.error('Agency name is required'); return; }
     if (signupPassword !== signupConfirm) { toast.error('Passwords do not match'); return; }
     if (signupPassword.length < 8) { toast.error('Password must be at least 8 characters'); return; }
     setLoading(true);
     try {
       await auth.register({
+        org_name: signupOrgName,
         name: signupName,
         email: signupEmail,
         password: signupPassword,
         subscription_name: selectedPlan,
       });
-      toast.success(`Welcome to AdSync, ${signupName}!`);
-      router.push('/content');
+      toast.success(`Welcome to AdSync, ${signupName}! Create your first brand to get started.`);
+      router.push('/brands');
     } catch (err: unknown) {
       toast.error(getApiErrorMessage(err, 'Registration failed. Please try again.'));
     } finally {
@@ -442,12 +455,16 @@ export default function LoginPage() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2">
+                      <Field label="Agency name" value={signupOrgName} onChange={setSignupOrgName}
+                        placeholder="Nike Agency" autoComplete="organization" required />
+                    </div>
+                    <div className="col-span-2">
                       <Field label="Your name" value={signupName} onChange={setSignupName}
                         placeholder="Jane Smith" autoComplete="name" required />
                     </div>
                     <div className="col-span-2">
                       <Field label="Work email" type="email" value={signupEmail} onChange={setSignupEmail}
-                        placeholder="you@brand.com" autoComplete="email" required />
+                        placeholder="you@agency.com" autoComplete="email" required />
                     </div>
                     <Field label="Password" type="password" value={signupPassword} onChange={setSignupPassword}
                       placeholder="Min. 8 characters" autoComplete="new-password" required />
@@ -458,7 +475,7 @@ export default function LoginPage() {
                   <Button type="submit" disabled={loading}
                     className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg shadow-lg shadow-purple-900/40 transition-all mt-1"
                   >
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create brand account'}
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create agency account'}
                   </Button>
 
                   <p className="text-center text-xs text-white/30">

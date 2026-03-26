@@ -14,7 +14,6 @@ import {
   UserCheck,
   Building2,
   X,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -23,6 +22,7 @@ import {
 import { useState, useEffect } from 'react';
 import { type FacebookPage, UserRole } from '@/lib/types';
 import { useSidebar } from '@/contexts/sidebar-context';
+import { BrandSwitcher } from '@/components/layout/brand-switcher';
 
 interface SidebarProps {
   isMobileOpen: boolean;
@@ -50,8 +50,9 @@ const primaryNav = [
   { name: 'Alerts',       href: '/alerts',       icon: Bell,      badge: 'Soon' },
 ];
 
-// Team tab visible to ADMIN only (no badge)
+// Tabs visible to ADMIN / ORG_ADMIN only
 const teamNav = { name: 'Team', href: '/team', icon: UserCheck };
+const brandsNav = { name: 'Brands', href: '/brands', icon: Building2 };
 
 const secondaryNav = [
   { name: 'Connections', href: '/connect',  icon: Plug                     },
@@ -64,13 +65,13 @@ export function Sidebar({
   userRole, pages = [], selectedPage, onPageSelect,
 }: SidebarProps) {
   const pathname = usePathname();
-  const [showPages, setShowPages] = useState(false);
   const { isCollapsed, toggleSidebar } = useSidebar();
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 
   const isSuper = userRole === UserRole.SUPER;
-  const isAdmin = userRole === UserRole.ADMIN;
+  const isOrgAdmin = userRole === UserRole.ORG_ADMIN;
+  const isAdmin = userRole === UserRole.ADMIN || isOrgAdmin;
   
   // Prevent hydration mismatch by only showing role-specific UI after mount
   const [mounted, setMounted] = useState(false);
@@ -83,7 +84,7 @@ export function Sidebar({
   // (userRole is client-side data; server always sees null).
   // Before mount, render an empty nav so super users don't see a flash of non-super tabs.
   const mainNav = mounted
-    ? (isSuper ? superNav : isAdmin ? [...primaryNav, teamNav] : primaryNav)
+    ? (isSuper ? superNav : isAdmin ? [...primaryNav, teamNav, brandsNav] : primaryNav)
     : [];
 
   const showSecondaryNav = mounted && !isSuper;
@@ -127,48 +128,10 @@ export function Sidebar({
           <X className="h-5 w-5" />
         </button>
 
-        {/* Brand / workspace selector — hidden for SUPER (they manage brands separately) */}
-        {!isSuper && (
+        {/* Brand switcher — hidden for SUPER (they manage brands separately) */}
+        {!isSuper && mounted && (
           <div className={`px-4 pt-5 pb-3 border-b border-white/8 ${isCollapsed ? 'lg:px-2' : ''}`}>
-            <div className={`flex items-center gap-3 ${isCollapsed ? 'lg:justify-center' : ''}`}>
-              <div className={`flex-1 min-w-0 ${isCollapsed ? 'lg:flex-none' : ''}`}>
-                {selectedPage ? (
-                  <button
-                    onClick={() => { if (!isCollapsed) setShowPages(!showPages); }}
-                    className={`flex items-center gap-2 bg-white/6 hover:bg-white/10 rounded-lg transition-colors
-                      ${isCollapsed ? 'lg:px-2 lg:py-2' : 'w-full px-3 py-2'}`}
-                  >
-                    <span className="h-2.5 w-2.5 rounded-full bg-purple-400 shrink-0" />
-                    <span className={`text-white font-semibold text-sm truncate flex-1 text-left ${isCollapsed ? 'lg:hidden' : ''}`}>
-                      {selectedPage.name}
-                    </span>
-                    <ChevronDown className={`h-3.5 w-3.5 text-slate-400 shrink-0 transition-transform ${showPages ? 'rotate-180' : ''} ${isCollapsed ? 'lg:hidden' : ''}`} />
-                  </button>
-                ) : (
-                  <div className={`flex items-center gap-2 px-3 py-2 ${isCollapsed ? 'lg:justify-center lg:px-2' : ''}`}>
-                    <span className="h-2.5 w-2.5 rounded-full bg-purple-400 shrink-0" />
-                    <span className={`text-white font-semibold text-sm ${isCollapsed ? 'lg:hidden' : ''}`}>AdSync</span>
-                  </div>
-                )}
-
-                {showPages && pages.length > 0 && !isCollapsed && (
-                  <div className="mt-1 bg-dk-raised rounded-lg overflow-hidden border border-white/8">
-                    {pages.map(page => (
-                      <button
-                        key={page.id}
-                        onClick={() => { onPageSelect?.(page); setShowPages(false); }}
-                        className={`w-full text-left px-3 py-2 text-sm transition-colors
-                          ${page.id === selectedPage?.id
-                            ? 'text-white bg-violet-500/15'
-                            : 'text-slate-400 hover:text-white hover:bg-white/6'}`}
-                      >
-                        {page.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            <BrandSwitcher isCollapsed={isCollapsed} onClose={() => setIsMobileOpen(false)} />
           </div>
         )}
 

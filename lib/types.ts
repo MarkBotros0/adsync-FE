@@ -319,14 +319,36 @@ export interface Brand {
   website?: string;
   industry?: string;
   is_active: boolean;
+  organization_id: number | null;
   subscription: Subscription | null;
   created_at: string;
   updated_at: string;
 }
 
+export interface Organization {
+  id: number;
+  name: string;
+  logo_url?: string;
+  is_active: boolean;
+  subscription: Subscription | null;
+  brand_count?: number;
+  max_brands?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** A brand entry in the brand switcher list. */
+export interface BrandSwitcherEntry {
+  id: number;
+  name: string;
+  logo_url?: string;
+  role: UserRole;
+}
+
 export enum UserRole {
   SUPER = 'SUPER',
-  ADMIN = 'ADMIN',
+  ORG_ADMIN = 'ORG_ADMIN',
+  ADMIN = 'ADMIN',   // legacy
   NORMAL = 'NORMAL',
 }
 
@@ -335,6 +357,9 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
+  org_id: number | null;
+  org_name: string | null;
+  brand_id: number | null;
   brand: Brand | null;
   is_active: boolean;
   is_email_verified: boolean;
@@ -347,6 +372,10 @@ export interface UserSession {
   access_token: string;
   token_type: 'bearer';
   user: User;
+  requires_brand_creation?: boolean;
+  requires_brand_selection?: boolean;
+  selection_token?: string;
+  brands?: BrandSwitcherEntry[];
 }
 
 /** @deprecated Use UserSession instead. */
@@ -355,6 +384,7 @@ export type BrandSession = UserSession;
 export interface BrandValidateResponse {
   valid: boolean;
   user_id: number;
+  org_id: number;
   brand_id: number;
   brand_name: string;
   subscription: SubscriptionName;
@@ -571,13 +601,11 @@ export interface ContentFeedResponse {
 }
 
 export interface BrandRegisterPayload {
+  org_name: string;
   name: string;
   email: string;
   password: string;
   subscription_name?: string;
-  logo_url?: string;
-  website?: string;
-  industry?: string;
 }
 
 export interface BrandLoginPayload {
@@ -607,8 +635,8 @@ export interface Invitation {
 
 export interface InvitePayload {
   email: string;
-  brand_id: number;
   role: UserRole;
+  brand_id?: number;   // required for NORMAL; omitted for ORG_ADMIN
 }
 
 export interface AcceptInvitePayload {
@@ -620,8 +648,10 @@ export interface AcceptInvitePayload {
 export interface InviteVerifyResponse {
   valid: boolean;
   email: string;
-  brand_id: number;
+  brand_id: number | null;
   brand_name: string | null;
+  organization_id: number | null;
+  org_name: string | null;
   role: UserRole;
   expires_at: string;
 }

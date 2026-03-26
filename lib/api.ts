@@ -167,6 +167,15 @@ export const brandAuthAPI = {
   login: (payload: BrandLoginPayload): Promise<AxiosResponse<UserSession>> =>
     api.post<UserSession>('/brands/login', payload),
 
+  selectBrand: (payload: { selection_token: string; brand_id: number }): Promise<AxiosResponse<UserSession>> =>
+    api.post<UserSession>('/brands/select-brand', payload),
+
+  switchBrand: (token: string, brand_id: number): Promise<AxiosResponse<UserSession>> =>
+    api.post<UserSession>('/brands/switch-brand', { brand_id }, { headers: _brandAuthHeaders(token) }),
+
+  myBrands: (token: string): Promise<AxiosResponse<{ success: boolean; brands: import('./types').BrandSwitcherEntry[] }>> =>
+    api.get('/brands/my-brands', { headers: _brandAuthHeaders(token) }),
+
   me: (token: string): Promise<AxiosResponse<{ success: boolean; user: UserSession['user'] }>> =>
     api.get('/brands/me', { headers: _brandAuthHeaders(token) }),
 
@@ -180,6 +189,28 @@ export const brandAuthAPI = {
   /** Rotates the server-side session key, invalidating all other sessions. */
   forceSignOut: (token: string): Promise<AxiosResponse<{ success: boolean; message: string; access_token: string; token_type: string }>> =>
     api.post('/brands/force-signout', {}, { headers: _brandAuthHeaders(token) }),
+};
+
+// ─── Organization API ─────────────────────────────────────────────────────────
+
+export const organizationAPI = {
+  getMyOrg: (token: string): Promise<AxiosResponse<{ success: boolean; organization: import('./types').Organization & { brand_count: number; max_brands: number } }>> =>
+    api.get('/organizations/me', { headers: _brandAuthHeaders(token) }),
+
+  createBrand: (token: string, payload: { name: string; logo_url?: string; website?: string; industry?: string }): Promise<AxiosResponse<{ success: boolean; brand: import('./types').Brand }>> =>
+    api.post('/organizations/brands', payload, { headers: _brandAuthHeaders(token) }),
+
+  listBrands: (token: string): Promise<AxiosResponse<{ success: boolean; total: number; brands: import('./types').Brand[] }>> =>
+    api.get('/organizations/brands', { headers: _brandAuthHeaders(token) }),
+
+  updateBrand: (token: string, brandId: number, payload: { name?: string; logo_url?: string; website?: string; industry?: string }): Promise<AxiosResponse<{ success: boolean; brand: import('./types').Brand }>> =>
+    api.patch(`/organizations/brands/${brandId}`, payload, { headers: _brandAuthHeaders(token) }),
+
+  deleteBrand: (token: string, brandId: number): Promise<AxiosResponse<{ success: boolean; message: string }>> =>
+    api.delete(`/organizations/brands/${brandId}`, { headers: _brandAuthHeaders(token) }),
+
+  listMembers: (token: string): Promise<AxiosResponse<{ success: boolean; total: number; members: { id: number; email: string; name: string; is_active: boolean; joined_at: string }[] }>> =>
+    api.get('/organizations/members', { headers: _brandAuthHeaders(token) }),
 };
 
 // ─── Subscriptions API ────────────────────────────────────────────────────────

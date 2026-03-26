@@ -28,7 +28,7 @@ export default function InstagramCallbackPage() {
       try {
         const response = await oauthCallbackAPI.instagramCallback(code, state);
         if (response.data.success) {
-          router.push('/content');
+          router.push('/connect');
         } else {
           router.push('/connect?error=no_session');
         }
