@@ -14,9 +14,10 @@ function getApiError(err: unknown, fallback: string): string {
 }
 
 const ROLE_BADGE: Record<UserRole, { label: string; classes: string }> = {
-  SUPER: { label: 'Super',  classes: 'bg-amber-500/20 text-amber-300 border border-amber-500/30' },
-  ADMIN: { label: 'Admin',  classes: 'bg-purple-500/20 text-purple-300 border border-purple-500/30' },
-  NORMAL:{ label: 'Member', classes: 'bg-white/10 text-white/50 border border-white/10' },
+  SUPER:     { label: 'Super',  classes: 'bg-amber-500/20 text-amber-300 border border-amber-500/30' },
+  ORG_ADMIN: { label: 'Admin',  classes: 'bg-amber-500/20 text-amber-300 border border-amber-500/30' },
+  ADMIN:     { label: 'Admin',  classes: 'bg-purple-500/20 text-purple-300 border border-purple-500/30' },
+  NORMAL:    { label: 'Member', classes: 'bg-white/10 text-white/50 border border-white/10' },
 };
 
 function RoleBadge({ role }: { role: UserRole }) {

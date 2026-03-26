@@ -10,14 +10,9 @@ import type { MentionStats } from '@/lib/types';
 
 type SortMode = 'recent' | 'popular';
 
-const EMPTY_STATS: MentionStats = {
-  total_mentions: 0, total_reach: 0, total_interactions: 0,
-  negative_count: 0, positive_count: 0, neutral_count: 0, positive_percentage: 0,
-};
-
 export default function MentionsPage() {
   const { selectedPlatforms, selectedSentiments, selectedEmotions, datePreset, customFrom, customTo } = useFilters();
-  const { mentions, stats, loading, reload, deleteMention } = useContentData();
+  const { mentions, loading, reload, deleteMention } = useContentData();
   const [sort, setSort] = useState<SortMode>('recent');
   const [reloading, setReloading] = useState(false);
 
@@ -47,6 +42,17 @@ export default function MentionsPage() {
     return list;
   }, [mentions, selectedPlatforms, selectedSentiments, selectedEmotions, sort, datePreset, customFrom, customTo]);
 
+  const filteredStats = useMemo((): MentionStats => {
+    const total_mentions = filtered.length;
+    const total_reach = filtered.reduce((sum, m) => sum + (m.reach ?? 0), 0);
+    const total_interactions = filtered.reduce((sum, m) => sum + (m.interactions ?? 0), 0);
+    const negative_count = filtered.filter(m => m.sentiment === 'negative').length;
+    const positive_count = filtered.filter(m => m.sentiment === 'positive').length;
+    const neutral_count = filtered.filter(m => m.sentiment === 'neutral').length;
+    const positive_percentage = total_mentions > 0 ? Math.round((positive_count / total_mentions) * 100) : 0;
+    return { total_mentions, total_reach, total_interactions, negative_count, positive_count, neutral_count, positive_percentage };
+  }, [filtered]);
+
   const handleReload = async () => {
     setReloading(true);
     reload();
@@ -59,7 +65,7 @@ export default function MentionsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Stats bar */}
-      <StatsBar stats={stats ?? EMPTY_STATS} />
+      <StatsBar stats={filteredStats} />
 
       {/* Mentions list header */}
       <div className="bg-white dark:bg-dk-surface border-b border-slate-200 dark:border-dk-border px-5 py-2.5 flex items-center gap-4">
