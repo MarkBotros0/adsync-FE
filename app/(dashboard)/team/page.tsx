@@ -142,19 +142,22 @@ export default function TeamPage() {
     if (!auth.token || !auth.user?.brand?.id) return;
     setLoading(true);
     try {
-      const res = await adminAPI.listBrandUsers(auth.token, auth.user.brand.id);
-      setUsers(res.data.users.filter((u: User) => u.id !== auth.user!.id));
-    } catch {
-      toast.error('Failed to load team members');
+      const [usersRes, invRes] = await Promise.allSettled([
+        adminAPI.listBrandUsers(auth.token, auth.user.brand.id),
+        adminAPI.listBrandInvitations(auth.token, auth.user.brand.id),
+      ]);
+      if (usersRes.status === 'fulfilled') {
+        setUsers(usersRes.value.data.users.filter((u: User) => u.id !== auth.user!.id));
+      } else {
+        toast.error('Failed to load team members');
+      }
+      if (invRes.status === 'fulfilled') {
+        setInvitations(invRes.value.data.invitations);
+      } else {
+        toast.error('Failed to load invitations');
+      }
     } finally {
       setLoading(false);
-    }
-
-    try {
-      const invRes = await adminAPI.listBrandInvitations(auth.token, auth.user.brand.id);
-      setInvitations(invRes.data.invitations);
-    } catch {
-      toast.error('Failed to load invitations');
     }
   }, [auth.token, auth.user?.brand?.id]);
 
