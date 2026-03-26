@@ -151,7 +151,7 @@ export function useBrandAuth(): UseBrandAuth {
     if (data.requires_brand_selection) {
       const firstBrand = data.brands?.[0];
       if (firstBrand && data.selection_token) {
-        const switchRes = await brandAuthAPI.switchBrand(data.selection_token, firstBrand.id);
+        const switchRes = await brandAuthAPI.selectBrand({ selection_token: data.selection_token, brand_id: firstBrand.id });
         const switched = switchRes.data as unknown as UserSession;
         const { access_token, user } = switched;
         saveSession(access_token, user);
