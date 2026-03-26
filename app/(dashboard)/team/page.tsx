@@ -209,13 +209,14 @@ export default function TeamPage() {
       ) : (
         <>
           {/* Team table */}
-          {users.length === 0 ? (
+          {users.length === 0 && invitations.length === 0 ? (
             <div className="text-center py-20 text-white/30">
               <UserCheck className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p>No team members yet. Invite someone to get started.</p>
             </div>
-          ) : (
+          ) : users.length > 0 ? (
             <div className="bg-white/[0.03] border border-white/8 rounded-xl overflow-hidden mb-8">
+
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-white/8">
@@ -261,19 +262,15 @@ export default function TeamPage() {
                 </tbody>
               </table>
             </div>
-          )}
+          ) : null}
 
           {/* Pending Invitations */}
-          <div>
-            <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wide mb-3 flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Pending Invitations ({invitations.length})
-            </h2>
-            {invitations.length === 0 ? (
-              <div className="bg-white/[0.03] border border-white/8 rounded-xl px-4 py-8 text-center text-white/30 text-sm">
-                No pending invitations.
-              </div>
-            ) : (
+          {invitations.length > 0 && (
+            <div>
+              <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Pending Invitations ({invitations.length})
+              </h2>
               <div className="bg-white/[0.03] border border-white/8 rounded-xl overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
@@ -316,8 +313,8 @@ export default function TeamPage() {
                   </tbody>
                 </table>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </>
       )}
 
