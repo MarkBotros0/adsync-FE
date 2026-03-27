@@ -200,6 +200,7 @@ export interface Mention {
   country?: string;
   hashtags?: string[];
   image_url?: string;
+  post_format?: string;
 }
 
 export interface PlatformCount {
@@ -235,7 +236,14 @@ export interface SentimentDataPoint {
 export interface InteractionDataPoint {
   date: string;
   interactions: number;
+  reach?: number;
+  likes?: number;
+  comments?: number;
+  saves?: number;
+  shares?: number;
 }
+
+export type InteractionFilter = 'all' | 'likes' | 'comments' | 'saves' | 'shares';
 
 export interface TopCountry {
   country: string;
@@ -273,6 +281,19 @@ export interface HeatmapCell {
   day: number;   // 0 = Mon … 6 = Sun
   hour: number;  // 0–23
   value: number;
+}
+
+export interface PostFormatDataPoint {
+  format: string;
+  interactions: number;
+  reach: number;
+  count: number;
+}
+
+export interface FollowersGrowthDataPoint {
+  date: string;
+  followers: number;
+  growth_rate: number; // % growth from first day in range
 }
 
 export interface BrandConfig {
@@ -654,6 +675,51 @@ export interface InviteVerifyResponse {
   org_name: string | null;
   role: UserRole;
   expires_at: string;
+}
+
+// ─── Per-Post Insights Types ──────────────────────────────────────────────────
+
+export interface PostTrafficSource {
+  source: string;
+  percentage: number;
+}
+
+export interface PostAgeGender {
+  age_range: string;
+  men_pct: number;
+  women_pct: number;
+  total_pct: number;
+}
+
+export interface PostCountryData {
+  country: string;
+  percentage: number;
+  flag?: string;
+}
+
+export interface PostInsights {
+  platform: MentionPlatform;
+  post_id: string;
+  views: number;
+  reach?: number;
+  impressions?: number;
+  followers_pct?: number;
+  non_followers_pct?: number;
+  net_follows?: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves?: number;
+  follows?: number;
+  total_interactions: number;
+  avg_watch_time_sec?: number;
+  three_sec_views?: number;
+  one_min_views?: number;
+  total_watch_time_sec?: number;
+  traffic_sources?: PostTrafficSource[];
+  age_gender?: PostAgeGender[];
+  countries?: PostCountryData[];
+  media_product_type?: string;
 }
 
 // ─── Admin Types ──────────────────────────────────────────────────────────────

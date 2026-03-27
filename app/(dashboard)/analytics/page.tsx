@@ -10,6 +10,8 @@ import { TopCountriesChart } from '@/components/charts/TopCountriesChart';
 import { TrendingConversationsChart } from '@/components/charts/TrendingConversationsChart';
 import { BestTimeHeatmap } from '@/components/charts/BestTimeHeatmap';
 import { TrendingHashtagsChart } from '@/components/charts/TrendingHashtagsChart';
+import { PostFormatChart } from '@/components/charts/PostFormatChart';
+import { FollowersGrowthChart } from '@/components/charts/FollowersGrowthChart';
 import { useFilters, getDateRange } from '@/contexts/filter-context';
 import { useContentData } from '@/contexts/content-data-context';
 import type {
@@ -22,6 +24,7 @@ import type {
   TrendingHashtag,
   TrendingConversation,
   HeatmapCell,
+  PostFormatDataPoint,
 } from '@/lib/types';
 
 // ─── Transformations ──────────────────────────────────────────────────────────
@@ -45,14 +48,16 @@ function mentionsToVolumeData(mentions: Mention[]): VolumeDataPoint[] {
 }
 
 function mentionsToInteractionsData(mentions: Mention[]): InteractionDataPoint[] {
-  const byDate: Record<string, number> = {};
+  const byDate: Record<string, { interactions: number; reach: number }> = {};
   mentions.forEach(m => {
     const date = formatDate(m.created_at);
-    byDate[date] = (byDate[date] ?? 0) + m.interactions;
+    if (!byDate[date]) byDate[date] = { interactions: 0, reach: 0 };
+    byDate[date].interactions += m.interactions;
+    byDate[date].reach += m.reach;
   });
   return Object.entries(byDate)
     .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
-    .map(([date, interactions]) => ({ date, interactions }));
+    .map(([date, v]) => ({ date, ...v }));
 }
 
 function mentionsToSentimentData(mentions: Mention[]): SentimentDataPoint[] {
@@ -108,6 +113,18 @@ function extractHashtags(mentions: Mention[]): TrendingHashtag[] {
     .sort(([, a], [, b]) => b - a)
     .slice(0, 10)
     .map(([hashtag, count]) => ({ hashtag, count, sentiment: 'neutral' as const }));
+}
+
+function mentionsToPostFormatData(mentions: Mention[]): PostFormatDataPoint[] {
+  const byFormat: Record<string, { interactions: number; reach: number; count: number }> = {};
+  mentions.forEach(m => {
+    const format = m.post_format ?? 'Post';
+    if (!byFormat[format]) byFormat[format] = { interactions: 0, reach: 0, count: 0 };
+    byFormat[format].interactions += m.interactions;
+    byFormat[format].reach += m.reach;
+    byFormat[format].count++;
+  });
+  return Object.entries(byFormat).map(([format, v]) => ({ format, ...v }));
 }
 
 function mentionsToHeatmapData(mentions: Mention[]): HeatmapCell[] {
@@ -193,6 +210,7 @@ export default function AnalyticsPage() {
   const {
     datePreset, customFrom, customTo,
     selectedPlatforms, selectedSentiments, selectedEmotions,
+    igSessionId,
   } = useFilters();
   const { mentions: allMentions, loading, reload } = useContentData();
   const [reloading, setReloading] = useState(false);
@@ -205,23 +223,31 @@ export default function AnalyticsPage() {
 
   const spinning = loading || reloading;
 
+  const { from: dateFrom, to: dateTo } = useMemo(
+    () => getDateRange(datePreset, customFrom, customTo),
+    [datePreset, customFrom, customTo],
+  );
+
   const filtered = useMemo(() => {
-    const { from, to } = getDateRange(datePreset, customFrom, customTo);
     return allMentions.filter(m => {
       const d = new Date(m.created_at);
-      if (from && d < from) return false;
-      if (to   && d > to)   return false;
+      if (dateFrom && d < dateFrom) return false;
+      if (dateTo   && d > dateTo)   return false;
       if (selectedPlatforms.length > 0 && !selectedPlatforms.includes(m.platform)) return false;
       if (selectedSentiments.length > 0 && !selectedSentiments.includes(m.sentiment)) return false;
       if (selectedEmotions.length > 0 && (!m.emotion || !selectedEmotions.includes(m.emotion))) return false;
       return true;
     });
-  }, [allMentions, datePreset, customFrom, customTo, selectedPlatforms, selectedSentiments, selectedEmotions]);
+  }, [allMentions, dateFrom, dateTo, selectedPlatforms, selectedSentiments, selectedEmotions]);
 
-  const stats     = useMemo(() => filtered.length > 0 ? computeStats(filtered) : null, [filtered]);
+  const igSince = dateFrom ? Math.floor(dateFrom.getTime() / 1000).toString() : undefined;
+  const igUntil = dateTo   ? Math.floor(dateTo.getTime()   / 1000).toString() : undefined;
+
+  const stats             = useMemo(() => filtered.length > 0 ? computeStats(filtered) : null, [filtered]);
   const volumeData        = useMemo(() => mentionsToVolumeData(filtered), [filtered]);
   const interactionsData  = useMemo(() => mentionsToInteractionsData(filtered), [filtered]);
   const sentimentData     = useMemo(() => mentionsToSentimentData(filtered), [filtered]);
+  const postFormatData    = useMemo(() => mentionsToPostFormatData(filtered), [filtered]);
   const hashtagsData      = useMemo(() => { const t = extractHashtags(filtered); return t.length > 0 ? t : undefined; }, [filtered]);
   const conversationsData = useMemo(() => { const k = extractKeywords(filtered); return k.length > 0 ? k : undefined; }, [filtered]);
   const heatmapData       = useMemo(() => mentionsToHeatmapData(filtered), [filtered]);
@@ -265,12 +291,14 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-slate-50 dark:bg-dk-bg">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <VolumeReachChart data={volumeData} />
-          <SentimentTimelineChart data={sentimentData} />
-        </div>
+        <VolumeReachChart data={volumeData} />
 
         <InteractionsChart data={interactionsData} />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <PostFormatChart data={postFormatData} />
+          <FollowersGrowthChart igSessionId={igSessionId} since={igSince} until={igUntil} />
+        </div>
 
         <TrendingConversationsChart data={conversationsData} />
 

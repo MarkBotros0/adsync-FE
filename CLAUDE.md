@@ -90,6 +90,18 @@ function Foo(props: { name: string; age: number }) { ... }
 
 ---
 
+## No Mock Data
+
+**Never add mock, stub, hardcoded, or placeholder data under any circumstances.** This includes:
+- Hardcoded arrays or objects standing in for API responses
+- `TODO: replace with real data` comments with fake values
+- Conditional mock branches (e.g. `if (dev) return mockData`)
+- Fake `setTimeout`-based loading simulations
+
+All data must come from real API calls. If an endpoint does not exist yet, leave the UI in a loading or empty state and wait for the real endpoint.
+
+---
+
 ## Code Quality
 
 - **No code duplication** — extract shared logic into reusable hooks (`hooks/`), utilities (`lib/`), or components (`components/`).

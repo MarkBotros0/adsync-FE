@@ -16,6 +16,7 @@ import type {
   IGDemographics,
   IGMedia,
   IGComment,
+  IGTimeSeriesPoint,
   OAuthLoginResponse,
   OAuthCallbackResponse,
   FacebookSessionResponse,
@@ -360,6 +361,20 @@ export const instagramAPI = {
       },
     }),
 
+  /** Get daily follower count time-series for the connected Instagram account (session-only). */
+  getFollowerTimeSeries: (
+    sessionId: string,
+    options?: { since?: string; until?: string },
+  ): Promise<AxiosResponse<ApiResponse<Record<string, IGTimeSeriesPoint[]>>>> =>
+    api.get(`/instagram/account/insights`, {
+      params: {
+        session_id: sessionId,
+        period: 'day',
+        since: options?.since,
+        until: options?.until,
+      },
+    }),
+
   /** Get lifetime audience demographics (gender/age, cities, countries). */
   getAudienceDemographics: (
     igUserId: string,
@@ -424,6 +439,18 @@ export const contentFeedAPI = {
     api.get<ContentFeedResponse>('/content/feed', {
       headers: _brandAuthHeaders(brandToken),
       params: options,
+    }),
+
+  /** Fetch per-post insights for a single content item. */
+  getPostInsights: (
+    brandToken: string,
+    platform: string,
+    postId: string,
+    postFormat?: string,
+  ): Promise<AxiosResponse<{ success: boolean; data?: import('./types').PostInsights; error?: string }>> =>
+    api.get(`/content/post/${platform}/${postId}/insights`, {
+      headers: _brandAuthHeaders(brandToken),
+      params: postFormat ? { post_format: postFormat } : undefined,
     }),
 };
 

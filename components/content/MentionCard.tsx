@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { ExternalLink, Trash2, Eye } from 'lucide-react';
-import type { Mention, MentionPlatform, Sentiment } from '@/lib/types';
+import { useState, useCallback } from 'react';
+import { ExternalLink, Trash2, Eye, ChevronDown, ChevronUp, BarChart2 } from 'lucide-react';
+import type { Mention, MentionPlatform, Sentiment, PostInsights } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
+import { contentFeedAPI } from '@/lib/api';
+import { useBrandAuthContext } from '@/contexts/brand-auth-context';
+import { PostInsightsPanel } from './PostInsightsPanel';
 
 // ─── Platform helpers ─────────────────────────────────────────────────────────
 
@@ -68,115 +71,195 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface MentionCardProps {
   mention: Mention;
   onDelete?: (id: string) => void;
 }
 
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function MentionCard({ mention, onDelete }: MentionCardProps) {
   const platBg = PLATFORM_BG[mention.platform];
   const sentMeta = SENTIMENT_META[mention.sentiment];
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [insightsOpen, setInsightsOpen] = useState(false);
+  const [insights, setInsights] = useState<PostInsights | null>(null);
+  const [loadingInsights, setLoadingInsights] = useState(false);
+  const [insightsError, setInsightsError] = useState<string | null>(null);
+
+  const { token } = useBrandAuthContext();
 
   const timeAgo = formatDistanceToNow(new Date(mention.created_at), { addSuffix: true });
 
+  const toggleInsights = useCallback(async () => {
+    if (insightsOpen) {
+      setInsightsOpen(false);
+      return;
+    }
+    setInsightsOpen(true);
+    if (insights) return; // already loaded
+
+    setLoadingInsights(true);
+    setInsightsError(null);
+    try {
+      if (!token) throw new Error('Not authenticated');
+      const res = await contentFeedAPI.getPostInsights(
+        token,
+        mention.platform,
+        mention.id,
+        mention.post_format,
+      );
+      if (res.data.success && res.data.data) {
+        setInsights(res.data.data);
+      } else {
+        setInsightsError(res.data.error ?? 'Insights not available');
+      }
+    } catch {
+      setInsightsError('Failed to load insights');
+    } finally {
+      setLoadingInsights(false);
+    }
+  }, [insightsOpen, insights, token, mention.platform, mention.id, mention.post_format]);
+
   return (
-    <div className="border-b border-slate-100 dark:border-dk-border bg-white dark:bg-dk-surface hover:bg-slate-50/60 dark:hover:bg-dk-raised/60 transition-colors px-5 py-4">
-      <div className="flex items-start gap-3">
-        {/* Avatar */}
-        <div className="relative shrink-0">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-dk-raised dark:to-purple-900/60 flex items-center justify-center text-sm font-semibold text-slate-600 dark:text-purple-300">
-            {getInitials(mention.author.name)}
-          </div>
-          <div className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full flex items-center justify-center ${platBg}`}>
-            <PlatformBadgeIcon platform={mention.platform} />
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          {/* Author row */}
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="text-sm font-semibold text-slate-900 dark:text-purple-100 truncate">{mention.author.name}</span>
-            {mention.author.verified && (
-              <span className="text-blue-500 text-xs">✓</span>
-            )}
-            <span className="text-xs text-slate-400 dark:text-purple-500">
-              {formatFollowers(mention.author.followers)} followers
-            </span>
-            <span className="text-xs text-slate-400 dark:text-purple-500 ml-auto">{timeAgo}</span>
-          </div>
-
-          {/* Text */}
-          <p className="text-sm text-slate-700 dark:text-purple-200 leading-relaxed line-clamp-3 mb-2">
-            {mention.content}
-          </p>
-
-          {/* Hashtags */}
-          {mention.hashtags && mention.hashtags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-2">
-              {mention.hashtags.map(tag => (
-                <span key={tag} className="text-xs text-purple-600 hover:underline cursor-pointer">
-                  {tag}
-                </span>
-              ))}
+    <div className="border-b border-slate-100 dark:border-dk-border bg-white dark:bg-dk-surface hover:bg-slate-50/60 dark:hover:bg-dk-raised/60 transition-colors">
+      <div className="px-5 py-4">
+        <div className="flex items-start gap-3">
+          {/* Avatar */}
+          <div className="relative shrink-0">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-dk-raised dark:to-purple-900/60 flex items-center justify-center text-sm font-semibold text-slate-600 dark:text-purple-300">
+              {getInitials(mention.author.name)}
             </div>
-          )}
-
-          {/* Footer */}
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Performance dots */}
-            <div className="flex items-center gap-0.5">
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    i < mention.performance ? 'bg-purple-500' : 'bg-slate-200 dark:bg-dk-raised'
-                  }`}
-                />
-              ))}
+            <div className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full flex items-center justify-center ${platBg}`}>
+              <PlatformBadgeIcon platform={mention.platform} />
             </div>
+          </div>
 
-            {/* Reach */}
-            <span className="text-xs text-slate-500 dark:text-purple-400 flex items-center gap-1">
-              <Eye className="h-3 w-3" />
-              {formatFollowers(mention.reach)}
-            </span>
-
-            {/* Interactions */}
-            <span className="text-xs text-slate-500 dark:text-purple-400">
-              {mention.interactions} interactions
-            </span>
-
-            {/* Sentiment badge */}
-            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${sentMeta.cls}`}>
-              {sentMeta.label}
-            </span>
-
-            {/* Actions */}
-            <div className="ml-auto flex items-center gap-2">
-              <a
-                href={mention.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs text-slate-400 dark:text-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-colors"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                Visit
-              </a>
-              {onDelete && (
-                <button
-                  onClick={() => setConfirmDelete(true)}
-                  aria-label="Delete mention"
-                  className="hidden"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            {/* Author row */}
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <span className="text-sm font-semibold text-slate-900 dark:text-purple-100 truncate">{mention.author.name}</span>
+              {mention.author.verified && (
+                <span className="text-blue-500 text-xs">✓</span>
               )}
+              <span className="text-xs text-slate-400 dark:text-purple-500">
+                {formatFollowers(mention.author.followers)} followers
+              </span>
+              <span className="text-xs text-slate-400 dark:text-purple-500 ml-auto">{timeAgo}</span>
+            </div>
+
+            {/* Text */}
+            <p className="text-sm text-slate-700 dark:text-purple-200 leading-relaxed line-clamp-3 mb-2">
+              {mention.content}
+            </p>
+
+            {/* Hashtags */}
+            {mention.hashtags && mention.hashtags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {mention.hashtags.map(tag => (
+                  <span key={tag} className="text-xs text-purple-600 hover:underline cursor-pointer">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Performance dots */}
+              <div className="flex items-center gap-0.5">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      i < mention.performance ? 'bg-purple-500' : 'bg-slate-200 dark:bg-dk-raised'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              {/* Reach */}
+              <span className="text-xs text-slate-500 dark:text-purple-400 flex items-center gap-1">
+                <Eye className="h-3 w-3" />
+                {formatFollowers(mention.reach)}
+              </span>
+
+              {/* Interactions */}
+              <span className="text-xs text-slate-500 dark:text-purple-400">
+                {mention.interactions} interactions
+              </span>
+
+              {/* Sentiment badge */}
+              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${sentMeta.cls}`}>
+                {sentMeta.label}
+              </span>
+
+              {/* Actions */}
+              <div className="ml-auto flex items-center gap-2">
+                {/* Insights toggle */}
+                <button
+                  onClick={toggleInsights}
+                  className={`flex items-center gap-1 text-xs font-medium transition-colors ${
+                    insightsOpen
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-slate-400 dark:text-purple-500 hover:text-blue-600 dark:hover:text-blue-400'
+                  }`}
+                  aria-label="Toggle post insights"
+                >
+                  <BarChart2 className="h-3.5 w-3.5" />
+                  Insights
+                  {insightsOpen
+                    ? <ChevronUp className="h-3 w-3" />
+                    : <ChevronDown className="h-3 w-3" />
+                  }
+                </button>
+
+                <a
+                  href={mention.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-slate-400 dark:text-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-colors"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Visit
+                </a>
+                {onDelete && (
+                  <button
+                    onClick={() => setConfirmDelete(true)}
+                    aria-label="Delete mention"
+                    className="hidden"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Insights panel */}
+      {insightsOpen && (
+        <>
+          {loadingInsights && (
+            <div className="border-t border-slate-100 dark:border-dk-border px-5 py-6 flex items-center justify-center gap-2 text-sm text-slate-400 dark:text-purple-500">
+              <div className="h-4 w-4 rounded-full border-2 border-slate-200 border-t-blue-500 animate-spin" />
+              Loading insights…
+            </div>
+          )}
+          {insightsError && (
+            <div className="border-t border-slate-100 dark:border-dk-border px-5 py-4 text-sm text-slate-400 dark:text-purple-500 text-center">
+              {insightsError}
+            </div>
+          )}
+          {insights && !loadingInsights && (
+            <PostInsightsPanel insights={insights} />
+          )}
+        </>
+      )}
 
       {/* Delete confirmation dialog */}
       {confirmDelete && (
