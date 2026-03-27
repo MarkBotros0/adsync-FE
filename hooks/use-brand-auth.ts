@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { brandAuthAPI } from '@/lib/api';
 import type { Brand, User, UserSession, SubscriptionName, BrandSwitcherEntry } from '@/lib/types';
 
@@ -67,6 +68,9 @@ const EMPTY_STATE: BrandAuthState = {
 };
 
 export function useBrandAuth(): UseBrandAuth {
+  const pathname = usePathname();
+  const isLoginPage = pathname === '/login';
+
   const [state, setState] = useState<BrandAuthState>({
     ...EMPTY_STATE,
     isLoading: true,
@@ -122,7 +126,7 @@ export function useBrandAuth(): UseBrandAuth {
 
   useEffect(() => {
     const stored = loadStoredSession();
-    if (stored) {
+    if (stored && !isLoginPage) {
       tokenRef.current = stored.token;
       setState({
         user: stored.user,

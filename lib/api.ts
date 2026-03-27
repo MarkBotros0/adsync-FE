@@ -25,6 +25,8 @@ import type {
   TikTokVideoList,
   BrandRegisterPayload,
   BrandLoginPayload,
+  ForgotPasswordPayload,
+  ResetPasswordPayload,
   ContentFeedResponse,
   InvitePayload,
   AcceptInvitePayload,
@@ -183,6 +185,12 @@ export const brandAuthAPI = {
   /** Called every 5 s by the frontend to validate the JWT and session_key. */
   validate: (token: string): Promise<AxiosResponse<BrandValidateResponse>> =>
     api.get<BrandValidateResponse>('/brands/validate', { headers: _brandAuthHeaders(token) }),
+
+  forgotPassword: (payload: ForgotPasswordPayload): Promise<AxiosResponse<{ success: boolean; message: string }>> =>
+    api.post('/brands/forgot-password', payload),
+
+  resetPassword: (payload: ResetPasswordPayload): Promise<AxiosResponse<{ success: boolean; message: string }>> =>
+    api.post('/brands/reset-password', payload),
 
   logout: (token: string): Promise<AxiosResponse<{ success: boolean; message: string }>> =>
     api.post('/brands/logout', {}, { headers: _brandAuthHeaders(token) }),

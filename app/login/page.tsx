@@ -13,6 +13,7 @@ import {
 import { toast } from 'sonner';
 import { AxiosError } from 'axios';
 import { cn } from '@/lib/utils';
+import { brandAuthAPI } from '@/lib/api';
 
 function getApiErrorMessage(err: unknown, fallback: string): string {
   const axiosErr = err as AxiosError<{ detail?: string }>;
@@ -111,12 +112,19 @@ export default function LoginPage() {
   const [tab, setTab] = useState<'login' | 'signup'>(
     searchParams.get('tab') === 'signup' ? 'signup' : 'login'
   );
+  const [forgotStep, setForgotStep] = useState<'off' | 'email' | 'reset'>('off');
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   // ── Login state ────────────────────────────────────────────────────────────
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+
+  // ── Forgot-password state ──────────────────────────────────────────────────
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetConfirm, setResetConfirm] = useState('');
 
   // ── Sign-up state (2-step) ─────────────────────────────────────────────────
   const [signupStep, setSignupStep] = useState<1 | 2>(1);
@@ -148,7 +156,48 @@ export default function LoginPage() {
   // Reset signup steps when switching tabs
   const handleTabChange = (t: 'login' | 'signup') => {
     setTab(t);
+    setForgotStep('off');
     if (t === 'signup') setSignupStep(1);
+  };
+
+  const openForgot = () => {
+    setForgotEmail(loginEmail);
+    setResetCode('');
+    setResetPassword('');
+    setResetConfirm('');
+    setForgotStep('email');
+  };
+
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await brandAuthAPI.forgotPassword({ email: forgotEmail });
+      toast.success('If that email is registered, a reset code has been sent.');
+      setForgotStep('reset');
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (resetPassword !== resetConfirm) { toast.error('Passwords do not match'); return; }
+    if (resetPassword.length < 8) { toast.error('Password must be at least 8 characters'); return; }
+    setLoading(true);
+    try {
+      await brandAuthAPI.resetPassword({ email: forgotEmail, code: resetCode, new_password: resetPassword });
+      toast.success('Password reset! Please sign in with your new password.');
+      setForgotStep('off');
+      setLoginEmail(forgotEmail);
+      setLoginPassword('');
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Invalid or expired code. Please try again.'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -325,8 +374,74 @@ export default function LoginPage() {
 
             <div className="p-7">
 
+              {/* ── Forgot password: step 1 — enter email ── */}
+              {tab === 'login' && forgotStep === 'email' && (
+                <form onSubmit={handleForgotSubmit} className="flex flex-col gap-5">
+                  <div className="flex items-center gap-3 mb-1">
+                    <button type="button" onClick={() => setForgotStep('off')} className="text-white/40 hover:text-white/70 transition-colors">
+                      <ArrowLeft className="h-4 w-4" />
+                    </button>
+                    <div>
+                      <h2 className="text-xl font-bold text-white">Reset password</h2>
+                      <p className="text-sm text-white/40 mt-0.5">We&apos;ll send a 6-digit code to your email</p>
+                    </div>
+                  </div>
+
+                  <Field label="Email" type="email" value={forgotEmail} onChange={setForgotEmail}
+                    placeholder="you@org.com" autoComplete="email" required />
+
+                  <Button type="submit" disabled={loading}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg shadow-lg shadow-purple-900/40 transition-all mt-1"
+                  >
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send reset code'}
+                  </Button>
+
+                  <p className="text-center text-xs text-white/30">
+                    Remembered it?{' '}
+                    <button type="button" onClick={() => setForgotStep('off')} className="text-purple-400 hover:text-purple-300 font-medium">
+                      Back to sign in →
+                    </button>
+                  </p>
+                </form>
+              )}
+
+              {/* ── Forgot password: step 2 — enter code + new password ── */}
+              {tab === 'login' && forgotStep === 'reset' && (
+                <form onSubmit={handleResetSubmit} className="flex flex-col gap-5">
+                  <div className="flex items-center gap-3 mb-1">
+                    <button type="button" onClick={() => setForgotStep('email')} className="text-white/40 hover:text-white/70 transition-colors">
+                      <ArrowLeft className="h-4 w-4" />
+                    </button>
+                    <div>
+                      <h2 className="text-xl font-bold text-white">Set new password</h2>
+                      <p className="text-sm text-white/40 mt-0.5">Enter the code sent to <span className="text-white/60">{forgotEmail}</span></p>
+                    </div>
+                  </div>
+
+                  <Field label="Reset code" value={resetCode} onChange={setResetCode}
+                    placeholder="6-digit code" autoComplete="one-time-code" required />
+                  <Field label="New password" type="password" value={resetPassword} onChange={setResetPassword}
+                    placeholder="Min. 8 characters" autoComplete="new-password" required />
+                  <Field label="Confirm password" type="password" value={resetConfirm} onChange={setResetConfirm}
+                    placeholder="Repeat password" autoComplete="new-password" required />
+
+                  <Button type="submit" disabled={loading}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg shadow-lg shadow-purple-900/40 transition-all mt-1"
+                  >
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reset password'}
+                  </Button>
+
+                  <p className="text-center text-xs text-white/30">
+                    Didn&apos;t receive it?{' '}
+                    <button type="button" onClick={() => setForgotStep('email')} className="text-purple-400 hover:text-purple-300 font-medium">
+                      Resend code →
+                    </button>
+                  </p>
+                </form>
+              )}
+
               {/* ── Login form ── */}
-              {tab === 'login' && (
+              {tab === 'login' && forgotStep === 'off' && (
                 <form onSubmit={handleLogin} className="flex flex-col gap-5">
                   <div className="mb-1">
                     <h2 className="text-xl font-bold text-white">Welcome back</h2>
@@ -334,9 +449,19 @@ export default function LoginPage() {
                   </div>
 
                   <Field label="Email" type="email" value={loginEmail} onChange={setLoginEmail}
-                    placeholder="you@brand.com" autoComplete="email" required />
+                    placeholder="you@org.com" autoComplete="email" required />
                   <Field label="Password" type="password" value={loginPassword} onChange={setLoginPassword}
                     placeholder="••••••••" autoComplete="current-password" required />
+
+                  <div className="flex justify-end -mt-1">
+                    <button
+                      type="button"
+                      onClick={openForgot}
+                      className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
 
                   <Button type="submit" disabled={loading}
                     className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg shadow-lg shadow-purple-900/40 transition-all mt-1"

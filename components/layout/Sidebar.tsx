@@ -94,6 +94,7 @@ export function Sidebar({
     return (
       <Link
         href={item.href}
+        prefetch={false}
         onClick={() => setIsMobileOpen(false)}
         className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors
           ${active ? 'bg-violet-500/20 text-white' : 'text-slate-400 hover:text-white hover:bg-white/6'}
