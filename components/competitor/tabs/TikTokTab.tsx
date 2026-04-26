@@ -139,6 +139,17 @@ export function TikTokTab({
         />
       </header>
 
+      {status === 'idle' && (
+        <EmptyTab
+          title="Not run yet"
+          description={
+            target?.target_value
+              ? 'Click Run scraper to fetch the TikTok creator and recent videos.'
+              : 'Configure a TikTok handle above, then click Run scraper.'
+          }
+        />
+      )}
+
       {(status === 'pending' || status === 'running' || status === 'failed') && (
         <ActorTabSkeleton
           status={status}

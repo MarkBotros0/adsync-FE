@@ -9,6 +9,8 @@ interface StatusPillProps {
 }
 
 const STATUS_STYLES: Record<Status, string> = {
+  idle:
+    'bg-slate-100 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400',
   pending:
     'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300',
   running:
@@ -22,6 +24,7 @@ const STATUS_STYLES: Record<Status, string> = {
 };
 
 const FALLBACK_LABELS: Record<CompetitorActorStatus, string> = {
+  idle: 'Not run',
   pending: 'Pending',
   running: 'Running',
   completed: 'Done',

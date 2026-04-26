@@ -89,13 +89,15 @@ export function RunActorButton({
 
   const Icon = status === 'completed' || status === 'failed' ? RotateCw : Play;
   const label =
-    status === 'completed'
-      ? 'Re-run'
-      : status === 'failed'
-        ? 'Retry'
-        : isRunning
-          ? 'Running…'
-          : 'Run scraper';
+    status === 'running'
+      ? 'Running…'
+      : status === 'pending'
+        ? 'Queued…'
+        : status === 'completed'
+          ? 'Re-run'
+          : status === 'failed'
+            ? 'Retry'
+            : 'Run scraper';
 
   const disabled = !hasTarget || isRunning || submitting || blocking;
 

@@ -103,6 +103,17 @@ export function PlacesTab({
         />
       </header>
 
+      {status === 'idle' && (
+        <EmptyTab
+          title="Not run yet"
+          description={
+            target?.target_value
+              ? 'Click Run scraper to fetch Google Maps locations and reviews.'
+              : 'Configure a Maps query above, then click Run scraper.'
+          }
+        />
+      )}
+
       {(status === 'pending' || status === 'running' || status === 'failed') && (
         <ActorTabSkeleton
           status={status}

@@ -50,12 +50,12 @@ export default function CompetitorDetailPage() {
   const [overviewStatuses, setOverviewStatuses] = useState<
     Record<CompetitorActorKey, CompetitorActorStatus>
   >({
-    facebook_ads: 'pending',
-    instagram: 'pending',
-    tiktok: 'pending',
-    google_search: 'pending',
-    website: 'pending',
-    google_places: 'pending',
+    facebook_ads: 'idle',
+    instagram: 'idle',
+    tiktok: 'idle',
+    google_search: 'idle',
+    website: 'idle',
+    google_places: 'idle',
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,17 +80,17 @@ export default function CompetitorDetailPage() {
       const payload = res.data.data;
       setCompetitor(payload.competitor);
       const next: Record<CompetitorActorKey, CompetitorActorStatus> = {
-        facebook_ads: 'pending',
-        instagram: 'pending',
-        tiktok: 'pending',
-        google_search: 'pending',
-        website: 'pending',
-        google_places: 'pending',
+        facebook_ads: 'idle',
+        instagram: 'idle',
+        tiktok: 'idle',
+        google_search: 'idle',
+        website: 'idle',
+        google_places: 'idle',
       };
       let mutated = false;
       for (const key of COMPETITOR_ACTOR_KEYS) {
         const r = payload.results[key];
-        next[key] = r?.status ?? 'pending';
+        next[key] = r?.status ?? 'idle';
         if (r?.status === 'completed' && overviewStatuses[key] !== 'completed') {
           mutated = true;
         }
@@ -417,8 +417,9 @@ function mergeStatus<T>(
       finished_at: null,
     } as CompetitorActorResult<T>;
   }
-  // If the overview shows pending/running but the cached result was completed,
-  // trust the overview (a fresh run is in flight).
+  // If the overview just observed a freshly-queued or running run, trust the
+  // overview over the cached per-actor row (which may still show the previous
+  // terminal state). Don't override with the lighter `idle` fallback.
   if (
     fallbackStatus !== result.status &&
     (fallbackStatus === 'pending' || fallbackStatus === 'running')

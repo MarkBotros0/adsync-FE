@@ -143,6 +143,17 @@ export function InstagramTab({
         />
       </header>
 
+      {status === 'idle' && (
+        <EmptyTab
+          title="Not run yet"
+          description={
+            target?.target_value
+              ? 'Click Run scraper to fetch the Instagram profile and recent posts.'
+              : 'Configure an Instagram handle above, then click Run scraper.'
+          }
+        />
+      )}
+
       {(status === 'pending' || status === 'running' || status === 'failed') && (
         <ActorTabSkeleton
           status={status}

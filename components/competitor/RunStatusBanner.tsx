@@ -20,7 +20,7 @@ export function RunStatusBanner({
   finishedAt,
   startedAt,
 }: RunStatusBannerProps) {
-  if (status === 'pending') return null;
+  if (status === 'idle' || status === 'pending') return null;
 
   if (status === 'running') {
     return (

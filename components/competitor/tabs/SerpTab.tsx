@@ -64,6 +64,17 @@ export function SerpTab({ competitorId, result, target, usage, onRunStarted }: S
         />
       </header>
 
+      {status === 'idle' && (
+        <EmptyTab
+          title="Not run yet"
+          description={
+            target?.target_value
+              ? 'Click Run scraper to fetch the latest organic SERP for this query.'
+              : 'Configure a search query above, then click Run scraper.'
+          }
+        />
+      )}
+
       {(status === 'pending' || status === 'running' || status === 'failed') && (
         <ActorTabSkeleton
           status={status}

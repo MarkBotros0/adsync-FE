@@ -104,6 +104,17 @@ export function WebsiteTab({
         />
       </header>
 
+      {status === 'idle' && (
+        <EmptyTab
+          title="Not run yet"
+          description={
+            target?.target_value
+              ? 'Click Run scraper to crawl this website.'
+              : 'Configure a website URL above, then click Run scraper.'
+          }
+        />
+      )}
+
       {(status === 'pending' || status === 'running' || status === 'failed') && (
         <ActorTabSkeleton
           status={status}

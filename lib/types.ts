@@ -779,8 +779,9 @@ export type CompetitorJobStatus =
   | 'failed';
 
 export type CompetitorActorStatus =
-  | 'pending'
-  | 'running'
+  | 'idle'        // no result row yet — user hasn't clicked Run
+  | 'pending'     // queued, orchestrator not started yet
+  | 'running'     // actor is executing
   | 'completed'
   | 'failed';
 
