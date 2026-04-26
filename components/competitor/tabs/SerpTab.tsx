@@ -5,6 +5,10 @@ import { ActorTabSkeleton } from '@/components/competitor/ActorTabSkeleton';
 import { EmptyTab } from '@/components/competitor/EmptyTab';
 import { RunActorButton } from '@/components/competitor/RunActorButton';
 import {
+  RunStatusBanner,
+  bannerPropsFromResult,
+} from '@/components/competitor/RunStatusBanner';
+import {
   COMPETITOR_ACTOR_DESCRIPTIONS,
   COMPETITOR_ACTOR_LABELS,
 } from '@/lib/constants';
@@ -47,6 +51,7 @@ export function SerpTab({ competitorId, result, target, usage, onRunStarted }: S
           ) : (
             <p className="mt-1 text-xs text-rose-500">No query configured.</p>
           )}
+          <RunStatusBanner {...bannerPropsFromResult(result)} />
         </div>
         <RunActorButton
           competitorId={competitorId}

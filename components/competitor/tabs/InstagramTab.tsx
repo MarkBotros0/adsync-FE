@@ -11,6 +11,10 @@ import {
   FilterChip,
 } from '@/components/competitor/DataTab';
 import { RunActorButton } from '@/components/competitor/RunActorButton';
+import {
+  RunStatusBanner,
+  bannerPropsFromResult,
+} from '@/components/competitor/RunStatusBanner';
 import { SummaryCards, type SummaryMetric } from '@/components/competitor/SummaryCards';
 import {
   COMPETITOR_ACTOR_DESCRIPTIONS,
@@ -126,6 +130,7 @@ export function InstagramTab({
           ) : (
             <p className="mt-1 text-xs text-rose-500">No handle configured — add one to enable this scraper.</p>
           )}
+          <RunStatusBanner {...bannerPropsFromResult(result)} />
         </div>
         <RunActorButton
           competitorId={competitorId}

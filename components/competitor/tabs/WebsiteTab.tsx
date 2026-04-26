@@ -11,6 +11,10 @@ import {
 } from '@/components/competitor/DataTab';
 import { RunActorButton } from '@/components/competitor/RunActorButton';
 import {
+  RunStatusBanner,
+  bannerPropsFromResult,
+} from '@/components/competitor/RunStatusBanner';
+import {
   COMPETITOR_ACTOR_DESCRIPTIONS,
   COMPETITOR_ACTOR_LABELS,
 } from '@/lib/constants';
@@ -87,6 +91,7 @@ export function WebsiteTab({
           ) : (
             <p className="mt-1 text-xs text-rose-500">No URL configured.</p>
           )}
+          <RunStatusBanner {...bannerPropsFromResult(result)} />
         </div>
         <RunActorButton
           competitorId={competitorId}
