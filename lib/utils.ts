@@ -17,9 +17,22 @@ export function formatNumber(num: number): string {
 
 export function formatDate(date: string | Date): string {
   const d = new Date(date);
-  return d.toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
   });
+}
+
+export function proxyImage(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host.endsWith('.cdninstagram.com') || host.endsWith('.fbcdn.net')) {
+      return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+    }
+  } catch {
+    return url;
+  }
+  return url;
 }

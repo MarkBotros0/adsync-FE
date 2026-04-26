@@ -758,3 +758,264 @@ export interface CreateBrandPayload {
   industry?: string;
   logo_url?: string;
 }
+
+// ─── Competitor Analysis Types ────────────────────────────────────────────────
+
+export type CompetitorActorKey =
+  | 'facebook_ads'
+  | 'website'
+  | 'google_search'
+  | 'instagram'
+  | 'tiktok'
+  | 'google_places';
+
+export type CompetitorJobStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'partial'
+  | 'failed';
+
+export type CompetitorActorStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed';
+
+export interface CompetitorJobSummary {
+  id: number;
+  status: CompetitorJobStatus;
+  actors_total: number;
+  actors_done: number;
+  actors_failed: number;
+  started_at: string | null;
+  finished_at: string | null;
+  created_at: string;
+}
+
+export interface Competitor {
+  id: number;
+  name: string;
+  slug: string;
+  created_at: string;
+  updated_at: string;
+  last_job: CompetitorJobSummary | null;
+  summaries?: Partial<Record<CompetitorActorKey, CompetitorActorSummary>> | null;
+}
+
+export interface CompetitorCreatePayload {
+  name: string;
+}
+
+// ── Per-actor summaries (compact, used in list / cards) ───────────────────────
+
+export interface CompetitorActorSummary {
+  ads_total?: number;
+  ads_active?: number;
+  pages?: string[];
+  pages_count?: number;
+  homepage_title?: string | null;
+  homepage_description?: string | null;
+  total_words?: number;
+  results_count?: number;
+  top_domain?: string | null;
+  top_url?: string | null;
+  people_also_ask?: string[];
+  top_username?: string | null;
+  followers?: number;
+  posts_count?: number;
+  matches?: number;
+  videos_count?: number;
+  total_plays?: number;
+  places_count?: number;
+  average_rating?: number | null;
+  total_reviews?: number;
+}
+
+// ── Per-actor data shapes (what each tab renders) ─────────────────────────────
+
+export interface FacebookAdResult {
+  id: string | null;
+  page_name: string | null;
+  page_url: string | null;
+  body: string | null;
+  cta: string | null;
+  link_url: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_active: boolean | null;
+  platforms: string[];
+  regions: unknown[];
+  media: { url: string; type: 'image' | 'video' }[];
+}
+
+export interface WebsitePageResult {
+  url: string | null;
+  title: string | null;
+  description: string | null;
+  headings: string[];
+  word_count: number;
+  excerpt: string | null;
+}
+
+export interface GoogleSearchOrganicResult {
+  rank: number | null;
+  title: string | null;
+  url: string | null;
+  domain: string | null;
+  description: string | null;
+}
+
+export interface GoogleSearchData {
+  organic: GoogleSearchOrganicResult[];
+  people_also_ask: string[];
+  related: string[];
+}
+
+export interface InstagramProfileResult {
+  username: string | null;
+  full_name: string | null;
+  biography: string | null;
+  followers: number;
+  follows: number;
+  posts_count: number;
+  is_verified: boolean;
+  profile_pic_url: string | null;
+  external_url: string | null;
+}
+
+export interface InstagramPostResult {
+  id: string | null;
+  shortcode: string | null;
+  url: string | null;
+  type: string | null;
+  caption: string | null;
+  likes: number;
+  comments: number;
+  video_views: number;
+  timestamp: string | null;
+  display_url: string | null;
+  owner_username: string | null;
+}
+
+export interface InstagramData {
+  profiles: InstagramProfileResult[];
+  posts: InstagramPostResult[];
+}
+
+export interface TikTokAuthorResult {
+  username: string;
+  nickname: string | null;
+  followers: number;
+  following: number;
+  hearts: number;
+  video_count: number;
+  verified: boolean;
+  avatar: string | null;
+  signature: string | null;
+}
+
+export interface TikTokVideoResult {
+  id: string | null;
+  url: string | null;
+  description: string | null;
+  create_time: string | null;
+  duration: number;
+  cover: string | null;
+  plays: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  author: string | null;
+  music_name: string | null;
+  hashtags: string[];
+}
+
+export interface TikTokData {
+  authors: TikTokAuthorResult[];
+  videos: TikTokVideoResult[];
+}
+
+export interface GooglePlaceReview {
+  name: string | null;
+  rating: number;
+  text: string | null;
+  published_at: string | null;
+}
+
+export interface GooglePlaceResult {
+  id: string | null;
+  name: string | null;
+  category: string | null;
+  address: string | null;
+  city: string | null;
+  country: string | null;
+  phone: string | null;
+  website: string | null;
+  rating: number | null;
+  reviews_count: number;
+  lat: number | null;
+  lng: number | null;
+  url: string | null;
+  image_url: string | null;
+  reviews: GooglePlaceReview[];
+}
+
+// ── Generic actor result wrapper ──────────────────────────────────────────────
+
+export interface CompetitorActorResult<TData = unknown> {
+  actor_key: CompetitorActorKey;
+  status: CompetitorActorStatus;
+  summary: CompetitorActorSummary | null;
+  data: TData | null;
+  error: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
+export interface CompetitorJobStatusResponse {
+  id: number;
+  status: CompetitorJobStatus;
+  actors_total: number;
+  actors_done: number;
+  actors_failed: number;
+  started_at: string | null;
+  finished_at: string | null;
+  actors: CompetitorActorResult[];
+}
+
+export interface CompetitorResultsResponse {
+  competitor: Competitor;
+  job: CompetitorJobSummary | null;
+  results: {
+    facebook_ads: CompetitorActorResult<FacebookAdResult[]>;
+    website: CompetitorActorResult<WebsitePageResult[]>;
+    google_search: CompetitorActorResult<GoogleSearchData>;
+    instagram: CompetitorActorResult<InstagramData>;
+    tiktok: CompetitorActorResult<TikTokData>;
+    google_places: CompetitorActorResult<GooglePlaceResult[]>;
+  };
+}
+
+export interface CompetitorListResponse {
+  total: number;
+  competitors: Competitor[];
+}
+
+export interface CompetitorCreateResponse {
+  competitor: Competitor;
+  job_id: number;
+}
+
+export interface CompetitorJobCreatedResponse {
+  job_id: number;
+  status: CompetitorJobStatus;
+}
+
+/** Generic envelope used by every Competitor Analysis endpoint. */
+export interface CompetitorEnvelope<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  error?: string;
+}

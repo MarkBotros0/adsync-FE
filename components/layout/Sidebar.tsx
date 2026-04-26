@@ -18,6 +18,7 @@ import {
   ChevronRight,
   LogOut,
   Plug,
+  Crosshair,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { type FacebookPage, UserRole } from '@/lib/types';
@@ -42,12 +43,13 @@ const superNav = [
 
 // Navigation for ADMIN + NORMAL users
 const primaryNav = [
-  { name: 'Content',      href: '/content',      icon: MessageSquare },
-  { name: 'Analytics',    href: '/analytics',    icon: BarChart2     },
-  { name: 'AI Digest',    href: '/ai-digest',    icon: Sparkles,  badge: 'Soon' },
-  { name: 'Influencers',  href: '/influencers',  icon: Users,     badge: 'Soon' },
-  { name: 'Sites',        href: '/sites',        icon: Globe,     badge: 'Soon' },
-  { name: 'Alerts',       href: '/alerts',       icon: Bell,      badge: 'Soon' },
+  { name: 'Content',              href: '/content',              icon: MessageSquare },
+  { name: 'Analytics',            href: '/analytics',            icon: BarChart2     },
+  { name: 'Competitor Analysis',  href: '/competitor-analysis',  icon: Crosshair     },
+  { name: 'AI Digest',            href: '/ai-digest',            icon: Sparkles,  badge: 'Soon' },
+  { name: 'Influencers',          href: '/influencers',          icon: Users,     badge: 'Soon' },
+  { name: 'Sites',                href: '/sites',                icon: Globe,     badge: 'Soon' },
+  { name: 'Alerts',               href: '/alerts',               icon: Bell,      badge: 'Soon' },
 ];
 
 // Tabs visible to ADMIN / ORG_ADMIN only

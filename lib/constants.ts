@@ -27,3 +27,44 @@ export const METRIC_ICONS = {
   CLICKS: 'MousePointer',
   CONVERSIONS: 'Target',
 } as const;
+
+// ─── Competitor Analysis ──────────────────────────────────────────────────────
+
+export const COMPETITOR_ACTOR_KEYS = [
+  'facebook_ads',
+  'instagram',
+  'tiktok',
+  'google_search',
+  'website',
+  'google_places',
+] as const;
+
+export const COMPETITOR_ACTOR_LABELS = {
+  facebook_ads:   'Ads',
+  instagram:      'Instagram',
+  tiktok:         'TikTok',
+  google_search:  'SERP',
+  website:        'Website',
+  google_places:  'Places',
+} as const;
+
+export const COMPETITOR_ACTOR_DESCRIPTIONS = {
+  facebook_ads:   'Active ads from Meta Ad Library (Facebook + Instagram)',
+  instagram:      'Profile + recent posts from Instagram search',
+  tiktok:         'Profile + recent videos from TikTok search',
+  google_search:  'Top organic results for the brand name',
+  website:        'Crawl of the brand’s top-ranked website',
+  google_places:  'Google Maps locations + recent reviews',
+} as const;
+
+export const COMPETITOR_JOB_STATUS_LABELS = {
+  pending:    'Queued',
+  running:    'Scraping…',
+  completed:  'Up to date',
+  partial:    'Partial',
+  failed:     'Failed',
+} as const;
+
+export const COMPETITOR_JOB_POLL_INTERVAL_MS = 6000;
+/** Hard ceiling on how long the frontend will keep polling a job. */
+export const COMPETITOR_JOB_POLL_MAX_DURATION_MS = 5 * 60 * 1000;

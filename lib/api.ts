@@ -36,6 +36,14 @@ import type {
   AdminUsersResponse,
   AdminBrandsResponse,
   CreateBrandPayload,
+  CompetitorCreatePayload,
+  CompetitorEnvelope,
+  CompetitorListResponse,
+  CompetitorCreateResponse,
+  Competitor,
+  CompetitorJobCreatedResponse,
+  CompetitorJobStatusResponse,
+  CompetitorResultsResponse,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -508,6 +516,65 @@ export const adminAPI = {
   /** List pending invitations for a specific brand. */
   listBrandInvitations: (token: string, brandId: number): Promise<AxiosResponse<AdminInvitationsResponse>> =>
     api.get<AdminInvitationsResponse>(`/admin/brands/${brandId}/invitations`, { headers: _brandAuthHeaders(token) }),
+};
+
+// ─── Competitor Analysis API ──────────────────────────────────────────────────
+
+export const competitorAPI = {
+  /** List all competitors saved for the authenticated brand. */
+  list: (token: string): Promise<AxiosResponse<CompetitorEnvelope<CompetitorListResponse>>> =>
+    api.get('/competitors', { headers: _brandAuthHeaders(token) }),
+
+  /** Get a single competitor + latest job summary. */
+  get: (token: string, id: number): Promise<AxiosResponse<CompetitorEnvelope<Competitor>>> =>
+    api.get(`/competitors/${id}`, { headers: _brandAuthHeaders(token) }),
+
+  /** Create a competitor and immediately kick off a scrape job. */
+  create: (
+    token: string,
+    payload: CompetitorCreatePayload,
+  ): Promise<AxiosResponse<CompetitorEnvelope<CompetitorCreateResponse>>> =>
+    api.post('/competitors', payload, { headers: _brandAuthHeaders(token) }),
+
+  /** Soft-delete a competitor. */
+  delete: (
+    token: string,
+    id: number,
+  ): Promise<AxiosResponse<{ success: boolean; message: string }>> =>
+    api.delete(`/competitors/${id}`, { headers: _brandAuthHeaders(token) }),
+
+  /** Trigger a fresh scrape job for an existing competitor. */
+  refresh: (
+    token: string,
+    id: number,
+  ): Promise<AxiosResponse<CompetitorEnvelope<CompetitorJobCreatedResponse>>> =>
+    api.post(`/competitors/${id}/refresh`, {}, { headers: _brandAuthHeaders(token) }),
+
+  /** Re-run a single actor in the most recent job for this competitor. */
+  retryActor: (
+    token: string,
+    id: number,
+    actorKey: string,
+  ): Promise<AxiosResponse<CompetitorEnvelope<{ job_id: number; actor_key: string; status: string }>>> =>
+    api.post(
+      `/competitors/${id}/results/${actorKey}/retry`,
+      {},
+      { headers: _brandAuthHeaders(token) },
+    ),
+
+  /** Poll job status — returns counters + per-actor statuses. */
+  jobStatus: (
+    token: string,
+    jobId: number,
+  ): Promise<AxiosResponse<CompetitorEnvelope<CompetitorJobStatusResponse>>> =>
+    api.get(`/competitors/jobs/${jobId}`, { headers: _brandAuthHeaders(token) }),
+
+  /** Get the most recent job's full per-actor results. */
+  results: (
+    token: string,
+    id: number,
+  ): Promise<AxiosResponse<CompetitorEnvelope<CompetitorResultsResponse>>> =>
+    api.get(`/competitors/${id}/results`, { headers: _brandAuthHeaders(token) }),
 };
 
 export default api;
