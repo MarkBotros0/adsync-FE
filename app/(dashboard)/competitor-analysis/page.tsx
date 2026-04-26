@@ -36,7 +36,6 @@ export default function CompetitorAnalysisPage() {
     }
   }, [token]);
 
-  // Initial load.
   useEffect(() => {
     if (authLoading) return;
     if (!token) {
@@ -47,8 +46,6 @@ export default function CompetitorAnalysisPage() {
   }, [authLoading, token, loadList]);
 
   // Poll while any competitor has a recently-started active job.
-  // Cap polling at COMPETITOR_JOB_POLL_MAX_DURATION_MS to avoid hammering when a
-  // job is wedged (e.g. server restarted mid-scrape).
   const hasActiveJob = useMemo(
     () =>
       competitors.some((c) => {
@@ -71,21 +68,6 @@ export default function CompetitorAnalysisPage() {
     }, COMPETITOR_JOB_POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [hasActiveJob, token, loadList]);
-
-  const handleRefresh = useCallback(
-    async (competitor: Competitor) => {
-      if (!token) return;
-      try {
-        await competitorAPI.refresh(token, competitor.id);
-        toast.success(`Refreshing "${competitor.name}"`);
-        await loadList();
-      } catch (err) {
-        const message = extractMessage(err);
-        toast.error(message);
-      }
-    },
-    [token, loadList],
-  );
 
   const handleDelete = useCallback(
     async (competitor: Competitor) => {
@@ -120,7 +102,7 @@ export default function CompetitorAnalysisPage() {
                 Competitor Analysis
               </h1>
               <p className="text-xs text-slate-500 sm:text-sm dark:text-slate-400">
-                Facebook + Instagram ads, organic Instagram & TikTok, Google search, websites, and Maps reviews.
+                Configure per-scraper targets, then run each scraper independently. Costs shown before every run.
               </p>
             </div>
           </div>
@@ -146,7 +128,6 @@ export default function CompetitorAnalysisPage() {
         ) : (
           <CompetitorListTable
             competitors={competitors}
-            onRefresh={handleRefresh}
             onDelete={handleDelete}
           />
         )}

@@ -43,8 +43,8 @@ export function ActorTabSkeleton({
           {error ?? 'Something went wrong while scraping this source.'}
         </p>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          {onRetry && (
+        {onRetry && (
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <Button
               variant="outline"
               size="sm"
@@ -55,11 +55,8 @@ export function ActorTabSkeleton({
               <RefreshCw className={`h-4 w-4 ${retrying ? 'animate-spin' : ''}`} />
               {retrying ? 'Retrying…' : 'Retry this section'}
             </Button>
-          )}
-          <span className="text-xs text-rose-600/80 dark:text-rose-200/70">
-            Or click <span className="font-semibold">Refresh</span> at the top of the page to retry the whole job.
-          </span>
-        </div>
+          </div>
+        )}
       </div>
     );
   }

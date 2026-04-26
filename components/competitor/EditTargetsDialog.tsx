@@ -1,40 +1,62 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { competitorAPI } from '@/lib/api';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
-import { toast } from 'sonner';
-import type { Competitor, CompetitorActorKey } from '@/lib/types';
+import { COMPETITOR_ACTOR_KEYS } from '@/lib/constants';
+import type {
+  CompetitorActorKey,
+  CompetitorTarget,
+  CompetitorTargetType,
+} from '@/lib/types';
 import {
   CompetitorTargetForm,
   buildTargetInputs,
   type TargetMap,
 } from './CompetitorTargetForm';
 
-interface AddCompetitorDialogProps {
+interface EditTargetsDialogProps {
   open: boolean;
+  competitorId: number;
+  competitorName: string;
+  initialTargets: CompetitorTarget[];
   onOpenChange: (open: boolean) => void;
-  onCreated: (competitor: Competitor) => void;
+  onSaved: (targets: CompetitorTarget[]) => void;
 }
 
-export function AddCompetitorDialog({ open, onOpenChange, onCreated }: AddCompetitorDialogProps) {
+export function EditTargetsDialog({
+  open,
+  competitorId,
+  competitorName,
+  initialTargets,
+  onOpenChange,
+  onSaved,
+}: EditTargetsDialogProps) {
   const { token } = useBrandAuthContext();
-  const [name, setName] = useState('');
-  const [targets, setTargets] = useState<TargetMap>({});
+  const [values, setValues] = useState<TargetMap>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const seededRef = useRef(false);
 
+  // Seed once per open cycle. Parent polling rebuilds `initialTargets` every
+  // tick, so we can't put it in deps — that would wipe in-progress edits.
   useEffect(() => {
-    if (open) {
-      setName('');
-      setTargets({});
-      setError(null);
-      requestAnimationFrame(() => inputRef.current?.focus());
+    if (!open) {
+      seededRef.current = false;
+      return;
     }
-  }, [open]);
+    if (seededRef.current) return;
+    seededRef.current = true;
+    const seeded: TargetMap = {};
+    for (const t of initialTargets) {
+      seeded[t.actor_key] = t.target_value;
+    }
+    setValues(seeded);
+    setError(null);
+  }, [open, initialTargets]);
 
   useEffect(() => {
     if (!open) return;
@@ -45,28 +67,39 @@ export function AddCompetitorDialog({ open, onOpenChange, onCreated }: AddCompet
     return () => document.removeEventListener('keydown', handler);
   }, [open, submitting, onOpenChange]);
 
-  const trimmed = name.trim();
-  const targetInputs = useMemo(() => buildTargetInputs(targets, trimmed), [targets, trimmed]);
-  const canSubmit = trimmed.length > 0 && !submitting;
+  const targetInputs = useMemo(
+    () => buildTargetInputs(values, competitorName),
+    [values, competitorName],
+  );
 
   if (!open) return null;
 
-  const handleTargetChange = (key: CompetitorActorKey, value: string) => {
-    setTargets((prev) => ({ ...prev, [key]: value }));
+  const handleChange = (key: CompetitorActorKey, value: string) => {
+    setValues((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canSubmit || !token) return;
+  const handleSave = async () => {
+    if (!token) return;
     setSubmitting(true);
     setError(null);
     try {
-      const res = await competitorAPI.create(token, {
-        name: trimmed,
-        targets: targetInputs,
-      });
-      onCreated(res.data.data.competitor);
-      toast.success(`Saved "${trimmed}". Open it to run a scraper.`);
+      const existingByKey = new Map(initialTargets.map((t) => [t.actor_key, t]));
+      const desiredByKey = new Map(targetInputs.map((t) => [t.actor_key, t]));
+
+      // Upserts.
+      const updated: CompetitorTarget[] = [];
+      for (const [actorKey, input] of desiredByKey.entries()) {
+        const res = await competitorAPI.upsertTarget(token, competitorId, actorKey, input);
+        updated.push(res.data.data);
+      }
+      // Deletions for cleared inputs.
+      for (const actorKey of COMPETITOR_ACTOR_KEYS) {
+        if (existingByKey.has(actorKey) && !desiredByKey.has(actorKey)) {
+          await competitorAPI.deleteTarget(token, competitorId, actorKey);
+        }
+      }
+      onSaved(updated);
+      toast.success('Targets updated');
       onOpenChange(false);
     } catch (err) {
       const message = extractMessage(err);
@@ -82,7 +115,7 @@ export function AddCompetitorDialog({ open, onOpenChange, onCreated }: AddCompet
       className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:px-4 sm:py-6"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="add-competitor-title"
+      aria-labelledby="edit-targets-title"
     >
       <div
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
@@ -92,15 +125,11 @@ export function AddCompetitorDialog({ open, onOpenChange, onCreated }: AddCompet
       <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-slate-200 bg-white shadow-2xl sm:rounded-2xl dark:border-dk-border dark:bg-dk-surface">
         <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-2 sm:px-6 sm:pt-6">
           <div>
-            <h2
-              id="add-competitor-title"
-              className="text-lg font-semibold text-slate-900 dark:text-white"
-            >
-              Add a competitor
+            <h2 id="edit-targets-title" className="text-lg font-semibold text-slate-900 dark:text-white">
+              Edit scraper targets
             </h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Set the brand name and the inputs you want each scraper to use. Nothing runs until you
-              click Run on a tab — every run shows its estimated cost first.
+              Update what each scraper should pull. Leave a field blank to remove its target.
             </p>
           </div>
           <button
@@ -113,41 +142,9 @@ export function AddCompetitorDialog({ open, onOpenChange, onCreated }: AddCompet
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5 px-5 pb-5 pt-3 sm:px-6 sm:pb-6">
-          <div>
-            <label
-              htmlFor="competitor-name"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-200"
-            >
-              Brand name
-            </label>
-            <input
-              ref={inputRef}
-              id="competitor-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Audi"
-              maxLength={120}
-              disabled={submitting}
-              className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 disabled:opacity-60 dark:border-dk-border dark:bg-dk-raised dark:text-white"
-            />
-          </div>
-
-          <div>
-            <p className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-              Per-scraper targets
-            </p>
-            <CompetitorTargetForm
-              values={targets}
-              onChange={handleTargetChange}
-              disabled={submitting}
-            />
-          </div>
-
-          {error && (
-            <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>
-          )}
+        <div className="space-y-4 px-5 pb-5 pt-3 sm:px-6 sm:pb-6">
+          <CompetitorTargetForm values={values} onChange={handleChange} disabled={submitting} />
+          {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
@@ -158,12 +155,12 @@ export function AddCompetitorDialog({ open, onOpenChange, onCreated }: AddCompet
             >
               Cancel
             </button>
-            <Button type="submit" size="sm" disabled={!canSubmit} className="w-full sm:w-auto">
+            <Button size="sm" onClick={handleSave} disabled={submitting} className="w-full sm:w-auto">
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              {submitting ? 'Saving…' : 'Save competitor'}
+              {submitting ? 'Saving…' : 'Save targets'}
             </Button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
@@ -176,5 +173,5 @@ function extractMessage(err: unknown): string {
     if (res?.data?.message) return res.data.message;
   }
   if (err instanceof Error) return err.message;
-  return 'Failed to add competitor';
+  return 'Failed to save targets';
 }

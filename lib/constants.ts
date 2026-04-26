@@ -40,22 +40,29 @@ export const COMPETITOR_ACTOR_KEYS = [
 ] as const;
 
 export const COMPETITOR_ACTOR_LABELS = {
-  facebook_ads:   'Ads',
+  facebook_ads:   'Meta Ads',
   instagram:      'Instagram',
   tiktok:         'TikTok',
-  google_search:  'SERP',
+  google_search:  'Google SERP',
   website:        'Website',
   google_places:  'Places',
 } as const;
 
 export const COMPETITOR_ACTOR_DESCRIPTIONS = {
   facebook_ads:   'Active ads from Meta Ad Library (Facebook + Instagram)',
-  instagram:      'Profile + recent posts from Instagram search',
-  tiktok:         'Profile + recent videos from TikTok search',
-  google_search:  'Top organic results for the brand name',
-  website:        'Crawl of the brand’s top-ranked website',
+  instagram:      'Profile + recent posts pulled directly from Instagram',
+  tiktok:         'Profile + recent videos pulled directly from TikTok',
+  google_search:  'Top organic results for the configured query',
+  website:        'Crawl of the configured website URL',
   google_places:  'Google Maps locations + recent reviews',
 } as const;
+
+/** Subset of actors that get pandas-backed summary cards (Meta, IG, TT). */
+export const COMPETITOR_PANDAS_ACTORS: ReadonlyArray<'facebook_ads' | 'instagram' | 'tiktok'> = [
+  'facebook_ads',
+  'instagram',
+  'tiktok',
+] as const;
 
 export const COMPETITOR_JOB_STATUS_LABELS = {
   pending:    'Queued',

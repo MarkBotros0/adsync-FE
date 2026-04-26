@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Trash2, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -16,11 +16,20 @@ import {
   COMPETITOR_JOB_POLL_MAX_DURATION_MS,
 } from '@/lib/constants';
 import type {
+  Competitor,
   CompetitorActorKey,
-  CompetitorResultsResponse,
+  CompetitorActorResult,
+  CompetitorActorStatus,
+  CompetitorTarget,
+  FacebookAdResult,
+  GooglePlaceResult,
+  GoogleSearchData,
+  InstagramData,
+  TikTokData,
+  WebsitePageResult,
 } from '@/lib/types';
-import { JobProgress } from '@/components/competitor/JobProgress';
-import { RefreshButton } from '@/components/competitor/RefreshButton';
+import { BudgetBanner } from '@/components/competitor/BudgetBanner';
+import { EditTargetsDialog } from '@/components/competitor/EditTargetsDialog';
 import { StatusPill } from '@/components/competitor/StatusPill';
 import { AdsTab } from '@/components/competitor/tabs/AdsTab';
 import { InstagramTab } from '@/components/competitor/tabs/InstagramTab';
@@ -28,6 +37,8 @@ import { TikTokTab } from '@/components/competitor/tabs/TikTokTab';
 import { SerpTab } from '@/components/competitor/tabs/SerpTab';
 import { WebsiteTab } from '@/components/competitor/tabs/WebsiteTab';
 import { PlacesTab } from '@/components/competitor/tabs/PlacesTab';
+import { useActorResults } from '@/hooks/useActorResults';
+import { useBrandUsage } from '@/hooks/useBrandUsage';
 
 export default function CompetitorDetailPage() {
   const params = useParams<{ id: string }>();
@@ -35,95 +46,110 @@ export default function CompetitorDetailPage() {
   const competitorId = Number(params.id);
   const { token, isLoading: authLoading } = useBrandAuthContext();
 
-  const [data, setData] = useState<CompetitorResultsResponse | null>(null);
+  const [competitor, setCompetitor] = useState<Competitor | null>(null);
+  const [overviewStatuses, setOverviewStatuses] = useState<
+    Record<CompetitorActorKey, CompetitorActorStatus>
+  >({
+    facebook_ads: 'pending',
+    instagram: 'pending',
+    tiktok: 'pending',
+    google_search: 'pending',
+    website: 'pending',
+    google_places: 'pending',
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<CompetitorActorKey>('facebook_ads');
+  const [editOpen, setEditOpen] = useState(false);
+  const [actorSignal, setActorSignal] = useState<Record<CompetitorActorKey, number>>({
+    facebook_ads: 0,
+    instagram: 0,
+    tiktok: 0,
+    google_search: 0,
+    website: 0,
+    google_places: 0,
+  });
 
-  const loadResults = useCallback(async () => {
+  const { usage, refresh: refreshUsage } = useBrandUsage(60_000);
+
+  const loadOverview = useCallback(async () => {
     if (!token || Number.isNaN(competitorId)) return;
     setError(null);
     try {
       const res = await competitorAPI.results(token, competitorId);
-      setData(res.data.data);
+      const payload = res.data.data;
+      setCompetitor(payload.competitor);
+      const next: Record<CompetitorActorKey, CompetitorActorStatus> = {
+        facebook_ads: 'pending',
+        instagram: 'pending',
+        tiktok: 'pending',
+        google_search: 'pending',
+        website: 'pending',
+        google_places: 'pending',
+      };
+      let mutated = false;
+      for (const key of COMPETITOR_ACTOR_KEYS) {
+        const r = payload.results[key];
+        next[key] = r?.status ?? 'pending';
+        if (r?.status === 'completed' && overviewStatuses[key] !== 'completed') {
+          mutated = true;
+        }
+      }
+      setOverviewStatuses(next);
+      if (mutated) {
+        // A scrape just finished — bump the signals for any actors whose status flipped
+        // to completed so child tabs re-fetch their data + filtered summary.
+        setActorSignal((prev) => {
+          const out = { ...prev };
+          for (const key of COMPETITOR_ACTOR_KEYS) {
+            if (
+              payload.results[key]?.status === 'completed' &&
+              overviewStatuses[key] !== 'completed'
+            ) {
+              out[key] = (out[key] ?? 0) + 1;
+            }
+          }
+          return out;
+        });
+        void refreshUsage();
+      }
     } catch (err) {
       const message = extractMessage(err);
       setError(message);
     } finally {
       setLoading(false);
     }
-  }, [token, competitorId]);
+  }, [token, competitorId, overviewStatuses, refreshUsage]);
 
   useEffect(() => {
     if (authLoading) return;
-    void loadResults();
-  }, [authLoading, loadResults]);
+    void loadOverview();
+  }, [authLoading, loadOverview]);
 
-  // Poll while a job is active OR any individual actor is still running.
-  // (Single-actor retries leave the job in "completed" but flip one result row
-  // back to "running", so we can't gate polling on job status alone.)
-  const job = data?.job ?? null;
-  const results = data?.results;
-  const anyActorActive = !!results && COMPETITOR_ACTOR_KEYS.some((k) => {
-    const s = results[k]?.status;
-    return s === 'pending' || s === 'running';
-  });
-  const jobActive = (() => {
-    if (!job || (job.status !== 'pending' && job.status !== 'running')) return false;
-    const startMs = job.started_at
-      ? Date.parse(job.started_at)
-      : Date.parse(job.created_at);
-    if (Number.isNaN(startMs)) return true;
-    return Date.now() - startMs < COMPETITOR_JOB_POLL_MAX_DURATION_MS;
-  })();
-  const activeJob = jobActive || anyActorActive;
-
-  useEffect(() => {
-    if (!activeJob || !token) return;
-    const id = setInterval(() => {
-      void loadResults();
-    }, COMPETITOR_JOB_POLL_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [activeJob, token, loadResults]);
-
-  // Re-fetch a couple of times shortly after kicking off a refresh/retry — the
-  // backend writes job/result rows asynchronously, so the first reload right
-  // after the API call often still shows the old "completed" state.
-  const reloadAfterAction = useCallback(async () => {
-    await loadResults();
-    setTimeout(() => void loadResults(), 800);
-    setTimeout(() => void loadResults(), 2500);
-  }, [loadResults]);
-
-  const handleRefresh = useCallback(async () => {
-    if (!token) return;
-    try {
-      await competitorAPI.refresh(token, competitorId);
-      toast.success('Refresh started');
-      await reloadAfterAction();
-    } catch (err) {
-      toast.error(extractMessage(err));
-    }
-  }, [token, competitorId, reloadAfterAction]);
-
-  const handleRetryActor = useCallback(
-    async (actorKey: CompetitorActorKey) => {
-      if (!token) return;
-      try {
-        await competitorAPI.retryActor(token, competitorId, actorKey);
-        toast.success(`Retrying ${actorKey.replace('_', ' ')}…`);
-        await reloadAfterAction();
-      } catch (err) {
-        toast.error(extractMessage(err));
-      }
-    },
-    [token, competitorId, reloadAfterAction],
+  // Poll overview while any actor is active.
+  const anyActive = useMemo(
+    () =>
+      Object.values(overviewStatuses).some(
+        (s) => s === 'pending' || s === 'running',
+      ),
+    [overviewStatuses],
   );
 
+  useEffect(() => {
+    if (!anyActive || !token || !competitor) return;
+    const startMs = competitor.last_job?.started_at
+      ? Date.parse(competitor.last_job.started_at)
+      : Date.now();
+    if (Date.now() - startMs > COMPETITOR_JOB_POLL_MAX_DURATION_MS) return;
+    const id = setInterval(() => {
+      void loadOverview();
+    }, COMPETITOR_JOB_POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [anyActive, token, loadOverview, competitor]);
+
   const handleDelete = useCallback(async () => {
-    if (!token) return;
-    if (!data?.competitor) return;
-    if (!confirm(`Delete "${data.competitor.name}"? This will also remove its scrape history.`)) return;
+    if (!token || !competitor) return;
+    if (!confirm(`Delete "${competitor.name}"? This will also remove its scrape history.`)) return;
     try {
       await competitorAPI.delete(token, competitorId);
       toast.success('Competitor deleted');
@@ -131,22 +157,77 @@ export default function CompetitorDetailPage() {
     } catch (err) {
       toast.error(extractMessage(err));
     }
-  }, [token, competitorId, data?.competitor, router]);
+  }, [token, competitorId, competitor, router]);
 
-  // Auto-switch to a non-pending tab once results arrive.
-  useEffect(() => {
-    if (!results) return;
-    const completed = COMPETITOR_ACTOR_KEYS.find((k) => results[k].status === 'completed');
-    if (completed) setActiveTab(completed);
-  }, [results]);
+  const handleTargetsSaved = useCallback(
+    (updated: CompetitorTarget[]) => {
+      setCompetitor((prev) => (prev ? { ...prev, targets: updated } : prev));
+    },
+    [],
+  );
 
-  const headerTitle = useMemo(() => data?.competitor?.name ?? 'Competitor', [data]);
+  const handleRunStarted = useCallback(async () => {
+    await loadOverview();
+    await refreshUsage();
+  }, [loadOverview, refreshUsage]);
+
+  const targets = competitor?.targets ?? [];
+  const targetByKey = useMemo<Record<CompetitorActorKey, CompetitorTarget | null>>(() => {
+    const out: Record<CompetitorActorKey, CompetitorTarget | null> = {
+      facebook_ads: null,
+      instagram: null,
+      tiktok: null,
+      google_search: null,
+      website: null,
+      google_places: null,
+    };
+    for (const t of targets) out[t.actor_key] = t;
+    return out;
+  }, [targets]);
+
+  // Lazy per-actor data load. Only the active tab's data is fetched.
+  const adsResults = useActorResults<FacebookAdResult[]>(
+    competitorId,
+    'facebook_ads',
+    activeTab === 'facebook_ads',
+    actorSignal.facebook_ads,
+  );
+  const igResults = useActorResults<InstagramData>(
+    competitorId,
+    'instagram',
+    activeTab === 'instagram',
+    actorSignal.instagram,
+  );
+  const ttResults = useActorResults<TikTokData>(
+    competitorId,
+    'tiktok',
+    activeTab === 'tiktok',
+    actorSignal.tiktok,
+  );
+  const serpResults = useActorResults<GoogleSearchData>(
+    competitorId,
+    'google_search',
+    activeTab === 'google_search',
+    actorSignal.google_search,
+  );
+  const webResults = useActorResults<WebsitePageResult[]>(
+    competitorId,
+    'website',
+    activeTab === 'website',
+    actorSignal.website,
+  );
+  const placesResults = useActorResults<GooglePlaceResult[]>(
+    competitorId,
+    'google_places',
+    activeTab === 'google_places',
+    actorSignal.google_places,
+  );
 
   if (loading || authLoading) {
     return <DetailSkeleton />;
   }
 
-  if (error || !data) {
+  if (error || !competitor) {
     return (
       <div className="flex h-full flex-col bg-slate-50 dark:bg-dk-bg">
         <div className="px-5 py-6 md:px-8">
@@ -159,11 +240,11 @@ export default function CompetitorDetailPage() {
         </div>
         <div className="px-5 md:px-8">
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-center dark:border-rose-500/30 dark:bg-rose-500/10">
-            <h3 className="font-semibold text-rose-700 dark:text-rose-300">Couldn’t load results</h3>
+            <h3 className="font-semibold text-rose-700 dark:text-rose-300">Couldn’t load this competitor</h3>
             <p className="mt-1 text-sm text-rose-600 dark:text-rose-200/80">
               {error ?? 'Competitor not found'}
             </p>
-            <Button variant="outline" size="sm" className="mt-4" onClick={loadResults}>
+            <Button variant="outline" size="sm" className="mt-4" onClick={loadOverview}>
               Try again
             </Button>
           </div>
@@ -185,44 +266,37 @@ export default function CompetitorDetailPage() {
         <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-3 min-w-0">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 text-sm font-bold text-white shadow-md sm:h-12 sm:w-12 sm:text-base">
-              {initials(headerTitle)}
+              {initials(competitor.name)}
             </span>
             <div className="min-w-0">
               <h1 className="truncate text-xl font-semibold text-slate-900 sm:text-2xl dark:text-white">
-                {headerTitle}
+                {competitor.name}
               </h1>
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500 sm:text-sm dark:text-slate-400">
-                {job && <StatusPill status={job.status} />}
-                {job?.finished_at && (
-                  <span className="truncate">
-                    Last refreshed {new Date(job.finished_at).toLocaleString()}
-                  </span>
-                )}
+                {competitor.last_job && <StatusPill status={competitor.last_job.status} />}
+                <span>
+                  {targets.filter((t) => t.is_enabled && t.target_value).length}/6 targets configured
+                </span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 md:shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="flex-1 md:flex-none">
+              <SlidersHorizontal className="h-4 w-4" />
+              <span className="hidden sm:inline">Edit targets</span>
+              <span className="sm:hidden">Targets</span>
+            </Button>
             <Button variant="outline" size="sm" onClick={handleDelete} className="flex-1 md:flex-none">
               <Trash2 className="h-4 w-4 text-rose-500" />
               <span className="hidden sm:inline">Delete</span>
             </Button>
-            <div className="flex-1 md:flex-none">
-              <RefreshButton status={job?.status ?? null} onRefresh={handleRefresh} size="default" />
-            </div>
           </div>
         </div>
 
-        {job && (job.status === 'pending' || job.status === 'running') && (
-          <div className="mt-5">
-            <JobProgress
-              status={job.status}
-              done={job.actors_done}
-              total={job.actors_total}
-              failed={job.actors_failed}
-              startedAt={job.started_at}
-              finishedAt={job.finished_at}
-            />
+        {usage && (usage.budget.will_warn || usage.budget.will_block) && (
+          <div className="mt-4">
+            <BudgetBanner usage={usage} />
           </div>
         )}
       </header>
@@ -235,7 +309,7 @@ export default function CompetitorDetailPage() {
           <div className="overflow-x-auto pb-2">
             <TabsList className="bg-slate-100 dark:bg-dk-surface">
               {COMPETITOR_ACTOR_KEYS.map((key) => {
-                const status = results?.[key].status ?? 'pending';
+                const status = overviewStatuses[key];
                 return (
                   <TabsTrigger key={key} value={key}>
                     <span className="flex items-center gap-2">
@@ -251,60 +325,107 @@ export default function CompetitorDetailPage() {
             </TabsList>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4 space-y-4">
             <TabsContent value="facebook_ads">
-              {results && (
-                <AdsTab
-                  result={results.facebook_ads}
-                  onRetry={() => handleRetryActor('facebook_ads')}
-                />
-              )}
+              <AdsTab
+                competitorId={competitorId}
+                result={mergeStatus(adsResults.result, overviewStatuses.facebook_ads)}
+                target={targetByKey.facebook_ads}
+                usage={usage}
+                signal={actorSignal.facebook_ads}
+                onRunStarted={handleRunStarted}
+              />
             </TabsContent>
             <TabsContent value="instagram">
-              {results && (
-                <InstagramTab
-                  result={results.instagram}
-                  onRetry={() => handleRetryActor('instagram')}
-                />
-              )}
+              <InstagramTab
+                competitorId={competitorId}
+                result={mergeStatus(igResults.result, overviewStatuses.instagram)}
+                target={targetByKey.instagram}
+                usage={usage}
+                signal={actorSignal.instagram}
+                onRunStarted={handleRunStarted}
+              />
             </TabsContent>
             <TabsContent value="tiktok">
-              {results && (
-                <TikTokTab
-                  result={results.tiktok}
-                  onRetry={() => handleRetryActor('tiktok')}
-                />
-              )}
+              <TikTokTab
+                competitorId={competitorId}
+                result={mergeStatus(ttResults.result, overviewStatuses.tiktok)}
+                target={targetByKey.tiktok}
+                usage={usage}
+                signal={actorSignal.tiktok}
+                onRunStarted={handleRunStarted}
+              />
             </TabsContent>
             <TabsContent value="google_search">
-              {results && (
-                <SerpTab
-                  result={results.google_search}
-                  onRetry={() => handleRetryActor('google_search')}
-                />
-              )}
+              <SerpTab
+                competitorId={competitorId}
+                result={mergeStatus(serpResults.result, overviewStatuses.google_search)}
+                target={targetByKey.google_search}
+                usage={usage}
+                onRunStarted={handleRunStarted}
+              />
             </TabsContent>
             <TabsContent value="website">
-              {results && (
-                <WebsiteTab
-                  result={results.website}
-                  onRetry={() => handleRetryActor('website')}
-                />
-              )}
+              <WebsiteTab
+                competitorId={competitorId}
+                result={mergeStatus(webResults.result, overviewStatuses.website)}
+                target={targetByKey.website}
+                usage={usage}
+                onRunStarted={handleRunStarted}
+              />
             </TabsContent>
             <TabsContent value="google_places">
-              {results && (
-                <PlacesTab
-                  result={results.google_places}
-                  onRetry={() => handleRetryActor('google_places')}
-                />
-              )}
+              <PlacesTab
+                competitorId={competitorId}
+                result={mergeStatus(placesResults.result, overviewStatuses.google_places)}
+                target={targetByKey.google_places}
+                usage={usage}
+                onRunStarted={handleRunStarted}
+              />
             </TabsContent>
           </div>
         </Tabs>
       </main>
+
+      <EditTargetsDialog
+        open={editOpen}
+        competitorId={competitorId}
+        competitorName={competitor.name}
+        initialTargets={targets}
+        onOpenChange={setEditOpen}
+        onSaved={handleTargetsSaved}
+      />
     </div>
   );
+}
+
+/** Merge the lazy-loaded actor result with the latest overview status —
+ *  ensures the tab shows "running" immediately after a run is queued, even if
+ *  the heavy ``data`` payload hasn't reloaded yet. */
+function mergeStatus<T>(
+  result: CompetitorActorResult<T> | null,
+  fallbackStatus: CompetitorActorStatus,
+): CompetitorActorResult<T> | null {
+  if (!result) {
+    return {
+      actor_key: 'facebook_ads', // overwritten by tab; status-only fallback
+      status: fallbackStatus,
+      summary: null,
+      data: null,
+      error: null,
+      started_at: null,
+      finished_at: null,
+    } as CompetitorActorResult<T>;
+  }
+  // If the overview shows pending/running but the cached result was completed,
+  // trust the overview (a fresh run is in flight).
+  if (
+    fallbackStatus !== result.status &&
+    (fallbackStatus === 'pending' || fallbackStatus === 'running')
+  ) {
+    return { ...result, status: fallbackStatus, error: null };
+  }
+  return result;
 }
 
 function DetailSkeleton() {

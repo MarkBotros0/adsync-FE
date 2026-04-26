@@ -787,12 +787,30 @@ export type CompetitorActorStatus =
 export interface CompetitorJobSummary {
   id: number;
   status: CompetitorJobStatus;
-  actors_total: number;
+  actors_total: number | null;
   actors_done: number;
   actors_failed: number;
   started_at: string | null;
   finished_at: string | null;
   created_at: string;
+}
+
+export type CompetitorTargetType = 'url' | 'handle' | 'query' | 'page_name';
+
+export interface CompetitorTarget {
+  actor_key: CompetitorActorKey;
+  target_value: string;
+  target_type: CompetitorTargetType;
+  is_enabled: boolean;
+  last_run_at: string | null;
+  last_cost_usd: number | null;
+}
+
+export interface CompetitorTargetInput {
+  actor_key: CompetitorActorKey;
+  target_value: string;
+  target_type: CompetitorTargetType;
+  is_enabled?: boolean;
 }
 
 export interface Competitor {
@@ -802,11 +820,136 @@ export interface Competitor {
   created_at: string;
   updated_at: string;
   last_job: CompetitorJobSummary | null;
+  targets: CompetitorTarget[];
   summaries?: Partial<Record<CompetitorActorKey, CompetitorActorSummary>> | null;
 }
 
 export interface CompetitorCreatePayload {
   name: string;
+  targets: CompetitorTargetInput[];
+}
+
+// ── Cost & budget ─────────────────────────────────────────────────────────────
+
+export interface EstimatedCost {
+  actor_key: CompetitorActorKey;
+  avg_compute_units: number | null;
+  avg_usage_usd: number | null;
+  low_usd: number | null;
+  high_usd: number | null;
+  samples: number;
+  basis: 'rolling-avg' | 'global-avg' | 'no-data';
+}
+
+export interface BudgetSnapshot {
+  used_compute_units: number;
+  used_usd: number;
+  monthly_compute_unit_budget: number | null;
+  warn_at_pct: number;
+  percent_used: number | null;
+  will_warn: boolean;
+  will_block: boolean;
+  period_start: string;
+}
+
+export interface BrandUsage {
+  period_start: string;
+  compute_units_used: number;
+  usage_usd: number;
+  runs: number;
+  by_actor: Record<string, { compute_units: number; usage_usd: number; runs: number }>;
+  budget: BudgetSnapshot;
+}
+
+export interface ApifyRunRecord {
+  id: number;
+  actor_key: CompetitorActorKey;
+  apify_run_id: string | null;
+  competitor_id: number | null;
+  status: string;
+  compute_units: number | null;
+  usage_total_usd: number | null;
+  started_at: string | null;
+  finished_at: string | null;
+  created_at: string;
+}
+
+export interface ApifyRunListResponse {
+  items: ApifyRunRecord[];
+  next_cursor: number | null;
+  limit: number;
+}
+
+// ── Pandas summary cards ──────────────────────────────────────────────────────
+
+export interface MetaAdsSummary {
+  total: number;
+  filtered_total: number;
+  ads_active: number;
+  ads_with_video: number;
+  median_run_days: number | null;
+  p90_run_days: number | null;
+  ads_per_week: Record<string, number>;
+  platforms_breakdown: Record<string, number>;
+  regions_top: Record<string, number>;
+  cta_breakdown: Record<string, number>;
+  page_concentration: number | null;
+  top_pages: Record<string, number>;
+}
+
+export interface InstagramSummary {
+  total: number;
+  filtered_total: number;
+  followers: number;
+  engagement_rate: number | null;
+  posts_per_week: Record<string, number>;
+  top_hashtags: Record<string, number>;
+  type_breakdown: Record<string, number>;
+  median_likes: number | null;
+  p90_likes: number | null;
+  median_comments: number | null;
+  like_to_comment_ratio_p90: number | null;
+  peak_post_hour: number | null;
+}
+
+export interface TikTokSummary {
+  total: number;
+  filtered_total: number;
+  followers: number;
+  hearts: number;
+  videos_per_week: Record<string, number>;
+  median_plays: number | null;
+  p90_plays: number | null;
+  median_likes: number | null;
+  like_per_play_p50: number | null;
+  share_to_play_p90: number | null;
+  avg_duration: number | null;
+  top_hashtags: Record<string, number>;
+  music_share: number | null;
+}
+
+export interface MetaAdsFilters {
+  status?: 'all' | 'active' | 'inactive';
+  has_video?: boolean;
+  platform?: string;
+  cta?: string;
+  page_name?: string;
+  search?: string;
+}
+
+export interface InstagramFilters {
+  type?: string;
+  has_caption?: boolean;
+  hashtag?: string;
+  search?: string;
+}
+
+export interface TikTokFilters {
+  has_music?: boolean;
+  hashtag?: string;
+  search?: string;
+  min_duration?: number;
+  max_duration?: number;
 }
 
 // ── Per-actor summaries (compact, used in list / cards) ───────────────────────
@@ -1006,12 +1149,30 @@ export interface CompetitorListResponse {
 
 export interface CompetitorCreateResponse {
   competitor: Competitor;
-  job_id: number;
 }
 
 export interface CompetitorJobCreatedResponse {
   job_id: number;
   status: CompetitorJobStatus;
+  actor_key: CompetitorActorKey | null;
+  estimated_cost_usd: number | null;
+}
+
+export interface ActorResultEnvelope<TData = unknown> {
+  actor_key: CompetitorActorKey;
+  result: CompetitorActorResult<TData>;
+  job: CompetitorJobSummary | null;
+}
+
+export interface ActorSummaryEnvelope<TSummary = unknown> {
+  actor_key: CompetitorActorKey;
+  summary: TSummary;
+}
+
+export interface CompetitorTargetsResponse {
+  targets: CompetitorTarget[];
+  default_target_types: Partial<Record<CompetitorActorKey, CompetitorTargetType>>;
+  allowed_target_types: Partial<Record<CompetitorActorKey, CompetitorTargetType[]>>;
 }
 
 /** Generic envelope used by every Competitor Analysis endpoint. */

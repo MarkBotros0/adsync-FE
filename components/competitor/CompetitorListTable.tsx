@@ -4,18 +4,16 @@ import Link from 'next/link';
 import { Trash2, Users, Megaphone, Star, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { JobProgress } from '@/components/competitor/JobProgress';
-import { RefreshButton } from '@/components/competitor/RefreshButton';
 import { StatusPill } from '@/components/competitor/StatusPill';
 import { formatNumber } from '@/lib/utils';
 import type { Competitor } from '@/lib/types';
 
 interface CompetitorListTableProps {
   competitors: Competitor[];
-  onRefresh: (competitor: Competitor) => void;
   onDelete: (competitor: Competitor) => void;
 }
 
-export function CompetitorListTable({ competitors, onRefresh, onDelete }: CompetitorListTableProps) {
+export function CompetitorListTable({ competitors, onDelete }: CompetitorListTableProps) {
   return (
     <>
       {/* Mobile: cards */}
@@ -24,7 +22,6 @@ export function CompetitorListTable({ competitors, onRefresh, onDelete }: Compet
           <CompetitorCard
             key={c.id}
             competitor={c}
-            onRefresh={() => onRefresh(c)}
             onDelete={() => onDelete(c)}
           />
         ))}
@@ -37,6 +34,7 @@ export function CompetitorListTable({ competitors, onRefresh, onDelete }: Compet
             <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               <th className="px-5 py-3">Competitor</th>
               <th className="px-5 py-3">Status</th>
+              <th className="px-5 py-3">Targets</th>
               <th className="px-5 py-3">Instagram</th>
               <th className="px-5 py-3">Active ads</th>
               <th className="px-5 py-3">Reviews</th>
@@ -48,7 +46,6 @@ export function CompetitorListTable({ competitors, onRefresh, onDelete }: Compet
               <CompetitorRow
                 key={c.id}
                 competitor={c}
-                onRefresh={() => onRefresh(c)}
                 onDelete={() => onDelete(c)}
               />
             ))}
@@ -61,11 +58,9 @@ export function CompetitorListTable({ competitors, onRefresh, onDelete }: Compet
 
 function CompetitorRow({
   competitor,
-  onRefresh,
   onDelete,
 }: {
   competitor: Competitor;
-  onRefresh: () => void;
   onDelete: () => void;
 }) {
   const last = competitor.last_job;
@@ -73,6 +68,7 @@ function CompetitorRow({
   const igSummary = summaries.instagram;
   const adsSummary = summaries.facebook_ads;
   const placesSummary = summaries.google_places;
+  const targetCount = competitor.targets.filter((t) => t.is_enabled && t.target_value).length;
 
   return (
     <tr className="transition-colors hover:bg-slate-50/60 dark:hover:bg-dk-raised/40">
@@ -100,7 +96,7 @@ function CompetitorRow({
             <JobProgress
               status={last.status}
               done={last.actors_done}
-              total={last.actors_total}
+              total={last.actors_total ?? 1}
               failed={last.actors_failed}
               startedAt={last.started_at}
               finishedAt={last.finished_at}
@@ -117,6 +113,10 @@ function CompetitorRow({
         ) : (
           <StatusPill status="pending" />
         )}
+      </td>
+      <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
+        <span className="font-semibold tabular-nums">{targetCount}</span>
+        <span className="ml-1 text-xs text-slate-500 dark:text-slate-400">/ 6</span>
       </td>
       <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
         {igSummary?.followers ? (
@@ -160,19 +160,15 @@ function CompetitorRow({
       </td>
       <td className="px-5 py-4">
         <div className="flex items-center justify-end gap-2">
-          <RefreshButton
-            status={last?.status ?? null}
-            onRefresh={onRefresh}
-          />
           <Button variant="ghost" size="icon-sm" onClick={onDelete} aria-label={`Delete ${competitor.name}`}>
             <Trash2 className="h-4 w-4 text-rose-500" />
           </Button>
           <Link
             href={`/competitor-analysis/${competitor.id}`}
-            className="text-slate-400 transition-colors hover:text-blue-600 dark:hover:text-blue-400"
-            aria-label={`View ${competitor.name}`}
+            className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100 dark:bg-blue-500/15 dark:text-blue-300 dark:hover:bg-blue-500/25"
+            aria-label={`Open ${competitor.name}`}
           >
-            <ChevronRight className="h-4 w-4" />
+            Open <ChevronRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       </td>
@@ -182,11 +178,9 @@ function CompetitorRow({
 
 function CompetitorCard({
   competitor,
-  onRefresh,
   onDelete,
 }: {
   competitor: Competitor;
-  onRefresh: () => void;
   onDelete: () => void;
 }) {
   const last = competitor.last_job;
@@ -194,6 +188,7 @@ function CompetitorCard({
   const igSummary = summaries.instagram;
   const adsSummary = summaries.facebook_ads;
   const placesSummary = summaries.google_places;
+  const targetCount = competitor.targets.filter((t) => t.is_enabled && t.target_value).length;
 
   return (
     <li className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-dk-border dark:bg-dk-surface">
@@ -209,7 +204,7 @@ function CompetitorCard({
             {competitor.name}
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400">
-            Added {formatRelative(competitor.created_at)}
+            {targetCount}/6 targets · Added {formatRelative(competitor.created_at)}
           </div>
         </div>
         {last && <StatusPill status={last.status} />}
@@ -220,7 +215,7 @@ function CompetitorCard({
           <JobProgress
             status={last.status}
             done={last.actors_done}
-            total={last.actors_total}
+            total={last.actors_total ?? 1}
             failed={last.actors_failed}
             startedAt={last.started_at}
             finishedAt={last.finished_at}
@@ -239,7 +234,12 @@ function CompetitorCard({
           <Trash2 className="h-4 w-4 text-rose-500" />
           Delete
         </Button>
-        <RefreshButton status={last?.status ?? null} onRefresh={onRefresh} />
+        <Link
+          href={`/competitor-analysis/${competitor.id}`}
+          className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100 dark:bg-blue-500/15 dark:text-blue-300 dark:hover:bg-blue-500/25"
+        >
+          Open <ChevronRight className="h-3.5 w-3.5" />
+        </Link>
       </div>
     </li>
   );

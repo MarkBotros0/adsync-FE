@@ -44,6 +44,15 @@ import type {
   CompetitorJobCreatedResponse,
   CompetitorJobStatusResponse,
   CompetitorResultsResponse,
+  CompetitorActorKey,
+  CompetitorTarget,
+  CompetitorTargetInput,
+  CompetitorTargetsResponse,
+  EstimatedCost,
+  ActorSummaryEnvelope,
+  ActorResultEnvelope,
+  BrandUsage,
+  ApifyRunListResponse,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -537,11 +546,11 @@ export const competitorAPI = {
   list: (token: string): Promise<AxiosResponse<CompetitorEnvelope<CompetitorListResponse>>> =>
     api.get('/competitors', { headers: _brandAuthHeaders(token) }),
 
-  /** Get a single competitor + latest job summary. */
+  /** Get a single competitor + latest job summary + targets. */
   get: (token: string, id: number): Promise<AxiosResponse<CompetitorEnvelope<Competitor>>> =>
     api.get(`/competitors/${id}`, { headers: _brandAuthHeaders(token) }),
 
-  /** Create a competitor and immediately kick off a scrape job. */
+  /** Create a competitor with per-actor targets. Does NOT auto-run any scraper. */
   create: (
     token: string,
     payload: CompetitorCreatePayload,
@@ -555,38 +564,110 @@ export const competitorAPI = {
   ): Promise<AxiosResponse<{ success: boolean; message: string }>> =>
     api.delete(`/competitors/${id}`, { headers: _brandAuthHeaders(token) }),
 
-  /** Trigger a fresh scrape job for an existing competitor. */
-  refresh: (
-    token: string,
-    id: number,
-  ): Promise<AxiosResponse<CompetitorEnvelope<CompetitorJobCreatedResponse>>> =>
-    api.post(`/competitors/${id}/refresh`, {}, { headers: _brandAuthHeaders(token) }),
+  // ── Targets ────────────────────────────────────────────────────────────────
 
-  /** Re-run a single actor in the most recent job for this competitor. */
-  retryActor: (
+  listTargets: (
     token: string,
     id: number,
-    actorKey: string,
-  ): Promise<AxiosResponse<CompetitorEnvelope<{ job_id: number; actor_key: string; status: string }>>> =>
+  ): Promise<AxiosResponse<CompetitorEnvelope<CompetitorTargetsResponse>>> =>
+    api.get(`/competitors/${id}/targets`, { headers: _brandAuthHeaders(token) }),
+
+  upsertTarget: (
+    token: string,
+    id: number,
+    actorKey: CompetitorActorKey,
+    payload: CompetitorTargetInput,
+  ): Promise<AxiosResponse<CompetitorEnvelope<CompetitorTarget>>> =>
+    api.put(
+      `/competitors/${id}/targets/${actorKey}`,
+      payload,
+      { headers: _brandAuthHeaders(token) },
+    ),
+
+  deleteTarget: (
+    token: string,
+    id: number,
+    actorKey: CompetitorActorKey,
+  ): Promise<AxiosResponse<{ success: boolean; message: string }>> =>
+    api.delete(`/competitors/${id}/targets/${actorKey}`, {
+      headers: _brandAuthHeaders(token),
+    }),
+
+  // ── Per-actor run + estimate + summary + results ──────────────────────────
+
+  runActor: (
+    token: string,
+    id: number,
+    actorKey: CompetitorActorKey,
+  ): Promise<AxiosResponse<CompetitorEnvelope<CompetitorJobCreatedResponse>>> =>
     api.post(
-      `/competitors/${id}/results/${actorKey}/retry`,
+      `/competitors/${id}/actors/${actorKey}/run`,
       {},
       { headers: _brandAuthHeaders(token) },
     ),
 
-  /** Poll job status — returns counters + per-actor statuses. */
+  estimateActor: (
+    token: string,
+    id: number,
+    actorKey: CompetitorActorKey,
+  ): Promise<AxiosResponse<CompetitorEnvelope<EstimatedCost>>> =>
+    api.get(`/competitors/${id}/actors/${actorKey}/estimate`, {
+      headers: _brandAuthHeaders(token),
+    }),
+
+  actorSummary: <TSummary = unknown>(
+    token: string,
+    id: number,
+    actorKey: CompetitorActorKey,
+    filters: Record<string, unknown> | null,
+  ): Promise<AxiosResponse<CompetitorEnvelope<ActorSummaryEnvelope<TSummary>>>> =>
+    api.post(
+      `/competitors/${id}/actors/${actorKey}/summary`,
+      { filters },
+      { headers: _brandAuthHeaders(token) },
+    ),
+
+  actorResults: <TData = unknown>(
+    token: string,
+    id: number,
+    actorKey: CompetitorActorKey,
+  ): Promise<AxiosResponse<CompetitorEnvelope<ActorResultEnvelope<TData>>>> =>
+    api.get(`/competitors/${id}/results/${actorKey}`, {
+      headers: _brandAuthHeaders(token),
+    }),
+
+  // ── Job & combined results ────────────────────────────────────────────────
+
   jobStatus: (
     token: string,
     jobId: number,
   ): Promise<AxiosResponse<CompetitorEnvelope<CompetitorJobStatusResponse>>> =>
     api.get(`/competitors/jobs/${jobId}`, { headers: _brandAuthHeaders(token) }),
 
-  /** Get the most recent job's full per-actor results. */
+  /** Returns the latest result row per actor (data omitted; use actorResults for the heavy payload). */
   results: (
     token: string,
     id: number,
   ): Promise<AxiosResponse<CompetitorEnvelope<CompetitorResultsResponse>>> =>
     api.get(`/competitors/${id}/results`, { headers: _brandAuthHeaders(token) }),
+};
+
+// ─── Usage / Billing API ──────────────────────────────────────────────────────
+
+export const usageAPI = {
+  brandCurrent: (
+    token: string,
+  ): Promise<AxiosResponse<CompetitorEnvelope<BrandUsage>>> =>
+    api.get('/usage/brand/current', { headers: _brandAuthHeaders(token) }),
+
+  brandRuns: (
+    token: string,
+    params?: { limit?: number; cursor?: number | null },
+  ): Promise<AxiosResponse<CompetitorEnvelope<ApifyRunListResponse>>> =>
+    api.get('/usage/brand/runs', {
+      headers: _brandAuthHeaders(token),
+      params,
+    }),
 };
 
 export default api;
