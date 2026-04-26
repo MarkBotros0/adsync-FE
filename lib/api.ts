@@ -516,6 +516,18 @@ export const adminAPI = {
   /** List pending invitations for a specific brand. */
   listBrandInvitations: (token: string, brandId: number): Promise<AxiosResponse<AdminInvitationsResponse>> =>
     api.get<AdminInvitationsResponse>(`/admin/brands/${brandId}/invitations`, { headers: _brandAuthHeaders(token) }),
+
+  /** Change a user's role (NORMAL ↔ ORG_ADMIN) within the caller's organization. */
+  updateUserRole: (token: string, userId: number, role: 'NORMAL' | 'ORG_ADMIN'): Promise<AxiosResponse<{ success: boolean; user_id: number; role: string }>> =>
+    api.patch(`/admin/users/${userId}/role`, { role }, { headers: _brandAuthHeaders(token) }),
+
+  /** Rotate the target user's session_key, invalidating their JWTs. */
+  forceSignOutUser: (token: string, userId: number): Promise<AxiosResponse<{ success: boolean; message: string; user_id: number }>> =>
+    api.post(`/admin/users/${userId}/force-signout`, {}, { headers: _brandAuthHeaders(token) }),
+
+  /** Remove a user from the caller's organization (soft-deletes memberships, rotates session). */
+  removeUser: (token: string, userId: number): Promise<AxiosResponse<{ success: boolean; message: string; user_id: number }>> =>
+    api.delete(`/admin/users/${userId}`, { headers: _brandAuthHeaders(token) }),
 };
 
 // ─── Competitor Analysis API ──────────────────────────────────────────────────

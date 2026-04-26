@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { adminAPI, invitationAPI } from '@/lib/api';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
 import { toast } from 'sonner';
-import { UserCheck, Plus, Mail, Shield, Loader2, X, Clock, Trash2 } from 'lucide-react';
+import { UserCheck, Plus, Mail, Shield, Loader2, X, Clock, Trash2, LogOut, UserMinus, AlertTriangle } from 'lucide-react';
 import { type User, type Invitation, UserRole } from '@/lib/types';
 import { AxiosError } from 'axios';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -69,7 +69,7 @@ function InviteModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
       <div className="w-full max-w-md bg-[#1a1a28] border border-white/10 rounded-2xl shadow-2xl p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-white font-semibold text-lg">Invite Team Member</h2>
+          <h2 className="text-white font-semibold text-lg">Invite User</h2>
           <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
             <X className="h-5 w-5" />
           </button>
@@ -117,9 +117,66 @@ function InviteModal({
   );
 }
 
+// ─── Confirm Modal ────────────────────────────────────────────────────────────
+
+function ConfirmModal({
+  title,
+  message,
+  confirmLabel,
+  destructive,
+  loading,
+  onCancel,
+  onConfirm,
+}: {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  destructive?: boolean;
+  loading?: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+      <div className="w-full max-w-md bg-[#1a1a28] border border-white/10 rounded-2xl shadow-2xl p-6">
+        <div className="flex items-start gap-3 mb-4">
+          <div className={`h-10 w-10 rounded-xl ${destructive ? 'bg-red-500/20' : 'bg-amber-500/20'} flex items-center justify-center shrink-0`}>
+            <AlertTriangle className={`h-5 w-5 ${destructive ? 'text-red-400' : 'text-amber-400'}`} />
+          </div>
+          <div>
+            <h2 className="text-white font-semibold text-lg">{title}</h2>
+            <p className="text-sm text-white/60 mt-1">{message}</p>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-5">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors flex items-center gap-2 ${
+              destructive ? 'bg-red-600 hover:bg-red-700' : 'bg-purple-600 hover:bg-purple-700'
+            } disabled:opacity-60`}
+          >
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function TeamPage() {
+export default function UsersManagementPage() {
   const auth = useBrandAuthContext();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
@@ -128,6 +185,12 @@ export default function TeamPage() {
   const [showInvite, setShowInvite] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [updatingRoleId, setUpdatingRoleId] = useState<number | null>(null);
+  const [confirm, setConfirm] = useState<
+    | { kind: 'remove' | 'signout' | 'promote' | 'demote'; user: User }
+    | null
+  >(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -138,7 +201,7 @@ export default function TeamPage() {
     else if (auth.user?.role === UserRole.NORMAL) router.replace('/content');
   }, [auth.isLoading, auth.user, router]);
 
-  const loadTeam = useCallback(async () => {
+  const loadUsers = useCallback(async () => {
     if (!auth.token || !auth.user?.brand?.id) return;
     setLoading(true);
     try {
@@ -149,7 +212,7 @@ export default function TeamPage() {
       if (usersRes.status === 'fulfilled') {
         setUsers(usersRes.value.data.users.filter((u: User) => u.id !== auth.user!.id));
       } else {
-        toast.error('Failed to load team members');
+        toast.error('Failed to load users');
       }
       if (invRes.status === 'fulfilled') {
         setInvitations(invRes.value.data.invitations);
@@ -162,8 +225,8 @@ export default function TeamPage() {
   }, [auth.token, auth.user?.brand?.id]);
 
   useEffect(() => {
-    if (auth.token && !auth.isLoading && (auth.user?.role === UserRole.ADMIN || auth.user?.role === UserRole.ORG_ADMIN)) loadTeam();
-  }, [auth.token, auth.isLoading, auth.user?.role, loadTeam]);
+    if (auth.token && !auth.isLoading && (auth.user?.role === UserRole.ADMIN || auth.user?.role === UserRole.ORG_ADMIN)) loadUsers();
+  }, [auth.token, auth.isLoading, auth.user?.role, loadUsers]);
 
   const handleDeleteInvitation = async (id: number) => {
     if (!auth.token) return;
@@ -176,6 +239,39 @@ export default function TeamPage() {
       toast.error(getApiError(err, 'Failed to delete invitation'));
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleRoleChange = (user: User, nextRole: UserRole.NORMAL | UserRole.ORG_ADMIN) => {
+    const current = user.effective_role ?? user.role;
+    if (current === nextRole) return;
+    setConfirm({ kind: nextRole === UserRole.ORG_ADMIN ? 'promote' : 'demote', user });
+  };
+
+  const runConfirm = async () => {
+    if (!confirm || !auth.token) return;
+    setConfirmLoading(true);
+    try {
+      if (confirm.kind === 'remove') {
+        await adminAPI.removeUser(auth.token, confirm.user.id);
+        toast.success(`${confirm.user.name} removed from the organization`);
+        await loadUsers();
+      } else if (confirm.kind === 'signout') {
+        await adminAPI.forceSignOutUser(auth.token, confirm.user.id);
+        toast.success(`${confirm.user.name} has been signed out`);
+      } else {
+        const nextRole = confirm.kind === 'promote' ? 'ORG_ADMIN' : 'NORMAL';
+        setUpdatingRoleId(confirm.user.id);
+        await adminAPI.updateUserRole(auth.token, confirm.user.id, nextRole);
+        toast.success(`${confirm.user.name} is now ${nextRole === 'ORG_ADMIN' ? 'an admin' : 'a member'}`);
+        await loadUsers();
+      }
+      setConfirm(null);
+    } catch (err) {
+      toast.error(getApiError(err, 'Action failed'));
+    } finally {
+      setConfirmLoading(false);
+      setUpdatingRoleId(null);
     }
   };
 
@@ -192,7 +288,7 @@ export default function TeamPage() {
             <UserCheck className="h-5 w-5 text-purple-400" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Team</h1>
+            <h1 className="text-xl font-bold text-white">Users Management</h1>
             <p className="text-sm text-white/40">{users.length} member{users.length !== 1 ? 's' : ''}</p>
           </div>
         </div>
@@ -211,11 +307,11 @@ export default function TeamPage() {
         </div>
       ) : (
         <>
-          {/* Team table */}
+          {/* Users table */}
           {users.length === 0 && invitations.length === 0 ? (
             <div className="text-center py-20 text-white/30">
               <UserCheck className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p>No team members yet. Invite someone to get started.</p>
+              <p>No users yet. Invite someone to get started.</p>
             </div>
           ) : users.length > 0 ? (
             <div className="bg-white/[0.03] border border-white/8 rounded-xl overflow-hidden mb-8">
@@ -226,10 +322,15 @@ export default function TeamPage() {
                     <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide">Member</th>
                     <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide">Role</th>
                     <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wide hidden lg:table-cell">Joined</th>
+                    <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {users.map(user => (
+                  {users.map(user => {
+                    const effective = user.effective_role ?? user.role;
+                    const isSelf = user.id === auth.user?.id;
+                    const isUpdating = updatingRoleId === user.id;
+                    return (
                     <tr key={user.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -241,7 +342,7 @@ export default function TeamPage() {
                           <div>
                             <p className="text-white font-medium flex items-center gap-2">
                               {user.name}
-                              {user.id === auth.user?.id && (
+                              {isSelf && (
                                 <span className="text-[10px] text-white/30">(you)</span>
                               )}
                             </p>
@@ -250,18 +351,59 @@ export default function TeamPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <RoleBadge role={user.role} />
-                          {user.role === UserRole.ADMIN && (
-                            <Shield className="h-3.5 w-3.5 text-purple-400/50" />
-                          )}
-                        </div>
+                        {isSelf ? (
+                          <div className="flex items-center gap-2">
+                            <RoleBadge role={effective} />
+                            {effective === UserRole.ORG_ADMIN && (
+                              <Shield className="h-3.5 w-3.5 text-purple-400/50" />
+                            )}
+                          </div>
+                        ) : (
+                          <Select
+                            value={effective === UserRole.ORG_ADMIN ? UserRole.ORG_ADMIN : UserRole.NORMAL}
+                            onValueChange={(v) => handleRoleChange(user, v as UserRole.NORMAL | UserRole.ORG_ADMIN)}
+                            disabled={isUpdating}
+                          >
+                            <SelectTrigger className="h-8 w-[140px] text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={UserRole.NORMAL}>Member</SelectItem>
+                              <SelectItem value={UserRole.ORG_ADMIN}>Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell text-white/40">
                         {new Date(user.created_at).toLocaleDateString()}
                       </td>
+                      <td className="px-4 py-3 text-right">
+                        {!isSelf && (
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setConfirm({ kind: 'signout', user })}
+                              className="p-2 rounded-md text-white/40 hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
+                              aria-label={`Sign out ${user.name}`}
+                              title="Force sign-out"
+                            >
+                              <LogOut className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirm({ kind: 'remove', user })}
+                              className="p-2 rounded-md text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                              aria-label={`Remove ${user.name}`}
+                              title="Remove from organization"
+                            >
+                              <UserMinus className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
+                      </td>
                     </tr>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -326,7 +468,37 @@ export default function TeamPage() {
           brandId={auth.user.brand?.id ?? 0}
           token={auth.token!}
           onClose={() => setShowInvite(false)}
-          onSent={loadTeam}
+          onSent={loadUsers}
+        />
+      )}
+
+      {confirm && (
+        <ConfirmModal
+          title={
+            confirm.kind === 'remove' ? `Remove ${confirm.user.name}?`
+            : confirm.kind === 'signout' ? `Sign ${confirm.user.name} out?`
+            : confirm.kind === 'promote' ? `Promote ${confirm.user.name} to admin?`
+            : `Demote ${confirm.user.name} to member?`
+          }
+          message={
+            confirm.kind === 'remove'
+              ? `${confirm.user.email} will lose access to all brands in this organization. They will be signed out immediately. This cannot be undone from the UI.`
+            : confirm.kind === 'signout'
+              ? `${confirm.user.email} will be signed out of all sessions and forced to log in again.`
+            : confirm.kind === 'promote'
+              ? `${confirm.user.email} will gain admin access to all brands in this organization. They will be signed out so the new role takes effect.`
+            : `${confirm.user.email} will lose admin access. They will be added as a member of the current brand and signed out so the new role takes effect.`
+          }
+          confirmLabel={
+            confirm.kind === 'remove' ? 'Remove user'
+            : confirm.kind === 'signout' ? 'Sign out'
+            : confirm.kind === 'promote' ? 'Promote to admin'
+            : 'Demote to member'
+          }
+          destructive={confirm.kind === 'remove' || confirm.kind === 'demote'}
+          loading={confirmLoading}
+          onCancel={() => !confirmLoading && setConfirm(null)}
+          onConfirm={runConfirm}
         />
       )}
     </div>

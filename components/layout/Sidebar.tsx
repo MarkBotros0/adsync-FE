@@ -53,7 +53,7 @@ const primaryNav = [
 ];
 
 // Tabs visible to ADMIN / ORG_ADMIN only
-const teamNav = { name: 'Team', href: '/team', icon: UserCheck };
+const teamNav = { name: 'Users Management', href: '/users-management', icon: UserCheck };
 const brandsNav = { name: 'Brands', href: '/brands', icon: Building2 };
 
 const secondaryNav = [
@@ -86,8 +86,12 @@ export function Sidebar({
   // (userRole is client-side data; server always sees null).
   // Before mount, render an empty nav so super users don't see a flash of non-super tabs.
   const mainNav = mounted
-    ? (isSuper ? superNav : isAdmin ? [...primaryNav, teamNav, brandsNav] : primaryNav)
+    ? (isSuper ? superNav : primaryNav)
     : [];
+
+  const secondaryNavItems = isAdmin
+    ? [brandsNav, teamNav, ...secondaryNav]
+    : secondaryNav;
 
   const showSecondaryNav = mounted && !isSuper;
 
@@ -155,7 +159,7 @@ export function Sidebar({
           {showSecondaryNav && (
             <>
               <div className="my-3 border-t border-white/8" />
-              {secondaryNav.map(item => <NavLink key={item.name} item={item} />)}
+              {secondaryNavItems.map(item => <NavLink key={item.name} item={item} />)}
             </>
           )}
         </nav>

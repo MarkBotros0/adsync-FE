@@ -378,6 +378,8 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
+  /** Brand-scoped effective role from /admin/brands/{id}/users — NORMAL or ORG_ADMIN. */
+  effective_role?: UserRole;
   org_id: number | null;
   org_name: string | null;
   brand_id: number | null;

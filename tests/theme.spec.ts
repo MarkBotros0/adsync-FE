@@ -11,7 +11,7 @@ const TABS = [
   { path: '/settings',   heading: 'Settings' },
   { path: '/reports',    heading: 'Reports' },
   { path: '/alerts',     heading: 'Alerts' },
-  { path: '/team',       heading: 'Team Members' },
+  { path: '/users-management', heading: 'Users Management' },
 ];
 
 // Skip auth gate — the app redirects unauthenticated users to /login.
