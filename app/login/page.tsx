@@ -7,9 +7,10 @@ import { UserRole } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 import {
-  BarChart3, Eye, EyeOff, Loader2, ArrowLeft, TrendingUp, Shield,
+  Eye, EyeOff, Loader2, ArrowLeft, TrendingUp, Shield,
   Zap, Check, ChevronRight, Users,
 } from 'lucide-react';
+import { EchofoldLogo } from '@/components/brand/echofold-logo';
 import { toast } from 'sonner';
 import { AxiosError } from 'axios';
 import { cn } from '@/lib/utils';
@@ -234,7 +235,7 @@ export default function LoginPage() {
         password: signupPassword,
         subscription_name: selectedPlan,
       });
-      toast.success(`Welcome to AdSync, ${signupName}! Create your first brand to get started.`);
+      toast.success(`Welcome to Echofold, ${signupName}! Create your first brand to get started.`);
       router.push('/brands');
     } catch (err: unknown) {
       toast.error(getApiErrorMessage(err, 'Registration failed. Please try again.'));
@@ -264,10 +265,12 @@ export default function LoginPage() {
 
         {/* Logo */}
         <Link href="/" className="relative z-10 inline-flex items-center gap-3 hover:opacity-80 transition-opacity w-fit">
-          <div className="h-9 w-9 rounded-xl bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-900/50">
-            <BarChart3 className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-lg font-bold text-white tracking-tight">AdSync</span>
+          <span className="ef-echo-pulse h-9 w-9 rounded-xl">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-900/50">
+              <EchofoldLogo variant="duo" size="md" />
+            </span>
+          </span>
+          <span className="text-lg font-bold text-white tracking-tight">Echofold</span>
         </Link>
 
         {/* Hero copy */}
@@ -275,7 +278,7 @@ export default function LoginPage() {
           {isSignupPlans ? (
             <>
               <p className="text-xs font-semibold uppercase tracking-widest text-purple-400 mb-4">Flexible Plans</p>
-              <h1 className="text-4xl font-black text-white leading-[1.1] mb-6">
+              <h1 className="font-display text-4xl font-extrabold tracking-[-0.025em] text-white leading-[1.05] mb-6">
                 Pick the plan that<br />
                 <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
                   fits your brand
@@ -302,7 +305,7 @@ export default function LoginPage() {
           ) : (
             <>
               <p className="text-xs font-semibold uppercase tracking-widest text-purple-400 mb-4">Social Media Intelligence</p>
-              <h1 className="text-5xl font-black text-white leading-[1.1] mb-6">
+              <h1 className="font-display text-5xl font-extrabold tracking-[-0.025em] text-white leading-[1.05] mb-6">
                 Monitor your brand<br />
                 <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
                   across every platform
@@ -329,7 +332,7 @@ export default function LoginPage() {
           )}
         </div>
 
-        <p className="relative z-10 text-xs text-white/20">© 2026 AdSync · Social Media Intelligence Platform</p>
+        <p className="relative z-10 text-xs text-white/20">© 2026 Echofold · Brand Intelligence Platform</p>
       </div>
 
       {/* ── Right form panel ── */}
@@ -343,10 +346,10 @@ export default function LoginPage() {
               Back
             </Link>
             <div className="flex lg:hidden items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-purple-600 flex items-center justify-center">
-                <BarChart3 className="h-4 w-4 text-white" />
-              </div>
-              <span className="text-sm font-bold text-white">AdSync</span>
+              <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 text-white">
+                <EchofoldLogo variant="duo" size="sm" />
+              </span>
+              <span className="text-sm font-bold text-white">Echofold</span>
             </div>
             <div className="w-10 lg:hidden" />
           </div>

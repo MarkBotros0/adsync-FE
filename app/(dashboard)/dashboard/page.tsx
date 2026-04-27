@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { EchofoldSpinner } from '@/components/brand/echofold-spinner';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -10,8 +11,8 @@ export default function DashboardPage() {
   }, [router]);
 
   return (
-    <div className="flex items-center justify-center h-full">
-      <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-purple-600 animate-spin" />
+    <div className="flex h-full items-center justify-center">
+      <EchofoldSpinner size="md" label="Loading your feed" />
     </div>
   );
 }

@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { MessageSquare, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import { StatsBar } from '@/components/content/StatsBar';
 import { MentionCard } from '@/components/content/MentionCard';
+import { EchofoldEmptyState } from '@/components/brand/echofold-empty-state';
+import { EchofoldSpinner } from '@/components/brand/echofold-spinner';
 import { useFilters, getDateRange } from '@/contexts/filter-context';
 import { useContentData } from '@/contexts/content-data-context';
 import type { MentionStats } from '@/lib/types';
@@ -99,8 +101,8 @@ export default function MentionsPage() {
 
       {/* Loading */}
       {loading && (
-        <div className="flex items-center justify-center py-10">
-          <div className="w-6 h-6 rounded-full border-2 border-slate-200 border-t-purple-600 animate-spin" />
+        <div className="flex flex-1 items-center justify-center bg-white dark:bg-dk-bg">
+          <EchofoldSpinner size="md" label="Listening for mentions" />
         </div>
       )}
 
@@ -108,13 +110,21 @@ export default function MentionsPage() {
       {!loading && (
         <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-dk-border bg-white dark:bg-dk-bg">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-              <div className="text-4xl mb-4">📭</div>
-              <h3 className="text-lg font-semibold text-slate-700 dark:text-purple-200 mb-2">No content found</h3>
-              <p className="text-sm text-slate-500 dark:text-purple-400">
-                Try adjusting your filters or clearing them to see all content.
-              </p>
-            </div>
+            mentions.length === 0 ? (
+              <EchofoldEmptyState
+                icon={MessageSquare}
+                title="The feed is quiet — for now"
+                description="Connect a platform to start pulling mentions of your brand. Echofold listens across X, Facebook, Instagram, TikTok and the open web."
+                className="bg-white dark:bg-dk-bg"
+              />
+            ) : (
+              <EchofoldEmptyState
+                icon={SlidersHorizontal}
+                title="No content matches your filters"
+                description="Try widening the date range, clearing platform or sentiment filters, and re-running the search."
+                className="bg-white dark:bg-dk-bg"
+              />
+            )
           ) : (
             filtered.map(mention => (
               <MentionCard

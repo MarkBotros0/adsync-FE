@@ -25,7 +25,7 @@ export default function SettingsPage() {
         <section className="bg-white dark:bg-dk-surface rounded-xl border border-slate-200 dark:border-dk-border overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 dark:border-dk-border">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-purple-100">Appearance</h2>
-            <p className="text-xs text-slate-500 dark:text-purple-400 mt-0.5">Choose how AdSync looks for you.</p>
+            <p className="text-xs text-slate-500 dark:text-purple-400 mt-0.5">Choose how Echofold looks for you.</p>
           </div>
 
           <div className="p-6">

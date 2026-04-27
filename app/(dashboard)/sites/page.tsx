@@ -1,6 +1,7 @@
 'use client';
 
 import { Globe } from 'lucide-react';
+import { EchofoldEmptyState } from '@/components/brand/echofold-empty-state';
 
 export default function SitesPage() {
   return (
@@ -9,18 +10,12 @@ export default function SitesPage() {
         <h1 className="text-base font-bold text-slate-900 dark:text-purple-100">Sites</h1>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-50 dark:bg-dk-bg">
-        <div className="h-16 w-16 rounded-full bg-teal-50 dark:bg-teal-900/30 flex items-center justify-center mb-4">
-          <Globe className="h-8 w-8 text-teal-400" />
-        </div>
-        <span className="text-xs font-semibold bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400 px-2.5 py-1 rounded-full uppercase tracking-wide mb-3">
-          Coming Soon
-        </span>
-        <h3 className="text-base font-semibold text-slate-800 dark:text-purple-100 mb-2">Web Monitoring</h3>
-        <p className="text-sm text-slate-500 dark:text-purple-400 max-w-xs">
-          Track any website or blog for mentions of your brand and get notified when new content is published.
-        </p>
-      </div>
+      <EchofoldEmptyState
+        icon={Globe}
+        badge="Coming Soon"
+        title="Web Monitoring"
+        description="Track any website, blog, or news source for mentions of your brand. Echofold catches the echo before it hits social."
+      />
     </div>
   );
 }

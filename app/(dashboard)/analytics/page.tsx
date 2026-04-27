@@ -1,8 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { Plug, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import { StatsBar } from '@/components/content/StatsBar';
+import { EchofoldEmptyState } from '@/components/brand/echofold-empty-state';
+import { EchofoldSpinner } from '@/components/brand/echofold-spinner';
 import { VolumeReachChart } from '@/components/charts/VolumeReachChart';
 import { SentimentTimelineChart } from '@/components/charts/SentimentTimelineChart';
 import { InteractionsChart } from '@/components/charts/InteractionsChart';
@@ -254,22 +256,29 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-purple-600 animate-spin" />
+      <div className="flex h-full items-center justify-center bg-slate-50 dark:bg-dk-bg">
+        <EchofoldSpinner size="md" label="Building your analytics" />
       </div>
     );
   }
 
   if (!stats) {
     const hasConnectedData = allMentions.length > 0;
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500 dark:text-purple-400">
-        <p className="text-sm">
-          {hasConnectedData
-            ? 'No data matches the current filters.'
-            : 'No data available. Connect a platform to see analytics.'}
-        </p>
-      </div>
+    return hasConnectedData ? (
+      <EchofoldEmptyState
+        icon={SlidersHorizontal}
+        title="No data matches your filters"
+        description="Adjust the date range, platform, sentiment, or emotion filters to bring data back into view."
+        className="h-full"
+      />
+    ) : (
+      <EchofoldEmptyState
+        icon={Plug}
+        badge="Get started"
+        title="Connect a platform to see analytics"
+        description="Echofold builds your charts, sentiment timeline, and trending topics from real platform data — connect Facebook, Instagram, or TikTok to get rolling."
+        className="h-full"
+      />
     );
   }
 

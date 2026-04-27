@@ -4,7 +4,8 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { invitationAPI } from '@/lib/api';
 import { toast } from 'sonner';
-import { BarChart3, Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react';
+import { EchofoldLogo } from '@/components/brand/echofold-logo';
 import Link from 'next/link';
 import { AxiosError } from 'axios';
 import type { InviteVerifyResponse, UserSession } from '@/lib/types';
@@ -62,7 +63,7 @@ function InvitePageInner() {
       // Persist session (same key as use-brand-auth.ts)
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: session.access_token, user: session.user }));
       setDone(true);
-      toast.success(`Welcome to AdSync, ${name}!`);
+      toast.success(`Welcome to Echofold, ${name}!`);
       setTimeout(() => router.push('/content'), 1500);
     } catch (err) {
       toast.error(getApiError(err, 'Failed to accept invitation. The link may have expired.'));
@@ -128,10 +129,10 @@ function InvitePageInner() {
 
         {/* Logo */}
         <Link href="/" className="inline-flex items-center gap-2.5 mb-8 hover:opacity-80 transition-opacity">
-          <div className="h-8 w-8 rounded-lg bg-purple-600 flex items-center justify-center">
-            <BarChart3 className="h-4.5 w-4.5 text-white" />
-          </div>
-          <span className="text-base font-bold text-white">AdSync</span>
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-900/30">
+            <EchofoldLogo variant="duo" size="sm" />
+          </span>
+          <span className="text-base font-bold text-white">Echofold</span>
         </Link>
 
         {/* Invite info banner */}

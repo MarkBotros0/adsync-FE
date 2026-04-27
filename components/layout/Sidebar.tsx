@@ -24,6 +24,7 @@ import { useState, useEffect } from 'react';
 import { type FacebookPage, UserRole } from '@/lib/types';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { BrandSwitcher } from '@/components/layout/brand-switcher';
+import { EchofoldLogo } from '@/components/brand/echofold-logo';
 
 interface SidebarProps {
   isMobileOpen: boolean;
@@ -103,7 +104,9 @@ export function Sidebar({
         prefetch={false}
         onClick={() => setIsMobileOpen(false)}
         className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors
-          ${active ? 'bg-violet-500/20 text-white' : 'text-slate-400 hover:text-white hover:bg-white/6'}
+          ${active
+            ? 'bg-purple-100 text-purple-700 dark:bg-violet-500/20 dark:text-white'
+            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/6'}
           ${isCollapsed ? 'lg:justify-center lg:p-2' : 'px-3 py-2.5'}
           px-3 py-2.5`}
       >
@@ -124,30 +127,53 @@ export function Sidebar({
         className={`fixed inset-y-0 left-0 z-40 flex flex-col transform transition-all duration-300 ease-in-out
           lg:translate-x-0 lg:static lg:z-auto
           w-64 ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}
-          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        style={{ background: 'linear-gradient(180deg, #15151d 0%, #0e0e13 100%)' }}
+          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
+          bg-white border-r border-slate-200
+          dark:bg-gradient-to-b dark:from-[#15151d] dark:to-[#0e0e13] dark:border-r-0`}
       >
         {/* Mobile close */}
         <button
-          className="lg:hidden absolute top-4 right-4 text-slate-400 hover:text-white"
+          className="lg:hidden absolute top-4 right-4 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
           onClick={() => setIsMobileOpen(false)}
         >
           <X className="h-5 w-5" />
         </button>
 
+        {/* Echofold brand strip — always visible, anchors the workspace identity */}
+        <div className={`px-4 pt-5 pb-4 ${isCollapsed ? 'lg:px-2' : ''}`}>
+          <Link
+            href="/content"
+            prefetch={false}
+            className={`group inline-flex items-center gap-2.5 transition-opacity hover:opacity-90 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
+          >
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-900/30">
+              <EchofoldLogo variant="duo" size="sm" />
+            </span>
+            <span className={`flex flex-col leading-none ${isCollapsed ? 'lg:hidden' : ''}`}>
+              <span className="text-base font-bold tracking-tight text-slate-900 dark:text-white">Echofold</span>
+              <span className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400 dark:text-white/40">
+                <span className="ef-echo-pulse h-1.5 w-1.5 rounded-full">
+                  <span className="block h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400" />
+                </span>
+                Listening
+              </span>
+            </span>
+          </Link>
+        </div>
+
         {/* Brand switcher — hidden for SUPER (they manage brands separately) */}
         {!isSuper && mounted && (
-          <div className={`px-4 pt-5 pb-3 border-b border-white/8 ${isCollapsed ? 'lg:px-2' : ''}`}>
+          <div className={`px-4 pt-5 pb-3 border-b border-slate-200 dark:border-white/8 ${isCollapsed ? 'lg:px-2' : ''}`}>
             <BrandSwitcher isCollapsed={isCollapsed} onClose={() => setIsMobileOpen(false)} />
           </div>
         )}
 
         {/* SUPER role header */}
         {isSuper && (
-          <div className={`px-4 pt-5 pb-3 border-b border-white/8 ${isCollapsed ? 'lg:px-2' : ''}`}>
+          <div className={`px-4 pt-5 pb-3 border-b border-slate-200 dark:border-white/8 ${isCollapsed ? 'lg:px-2' : ''}`}>
             <div className={`flex items-center gap-2 px-3 py-2 ${isCollapsed ? 'lg:justify-center lg:px-2' : ''}`}>
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-400 shrink-0" />
-              <span className={`text-amber-300 font-semibold text-sm ${isCollapsed ? 'lg:hidden' : ''}`}>Super Admin</span>
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-500 dark:bg-amber-400 shrink-0" />
+              <span className={`font-semibold text-sm text-amber-600 dark:text-amber-300 ${isCollapsed ? 'lg:hidden' : ''}`}>Super Admin</span>
             </div>
           </div>
         )}
@@ -158,7 +184,7 @@ export function Sidebar({
 
           {showSecondaryNav && (
             <>
-              <div className="my-3 border-t border-white/8" />
+              <div className="my-3 border-t border-slate-200 dark:border-white/8" />
               {secondaryNavItems.map(item => <NavLink key={item.name} item={item} />)}
             </>
           )}
@@ -168,7 +194,9 @@ export function Sidebar({
         <div className={`pb-2 space-y-2 ${isCollapsed ? 'lg:px-2' : 'px-3'}`}>
           <button
             onClick={onLogout}
-            className={`w-full flex items-center gap-3 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/6 transition-colors
+            className={`w-full flex items-center gap-3 rounded-lg text-sm font-medium transition-colors
+              text-slate-600 hover:text-slate-900 hover:bg-slate-100
+              dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/6
               ${isCollapsed ? 'lg:justify-center lg:p-2' : 'px-3 py-2.5'}
               px-3 py-2.5`}
           >
@@ -178,11 +206,11 @@ export function Sidebar({
         </div>
 
         {/* Desktop collapse toggle */}
-        <div className="hidden lg:flex items-center justify-center border-t border-white/8 py-3">
+        <div className="hidden lg:flex items-center justify-center border-t border-slate-200 dark:border-white/8 py-3">
           <button
             onClick={toggleSidebar}
             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/6 transition-colors"
+            className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/6 transition-colors"
           >
             {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </button>

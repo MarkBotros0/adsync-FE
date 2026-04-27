@@ -4,6 +4,14 @@
 @custom-variant dark (&:is(.dark, .dark *));
 
 @theme {
+  /* ── Typography ─────────────────────────────────────────────────── */
+  /* font-sans   → body, UI, labels (Inter)                            */
+  /* font-display → landing headlines, plan prices, hero numbers (Manrope) */
+  /* font-mono   → stat counters, IDs, timestamps (JetBrains Mono)     */
+  --font-sans:    var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-manrope), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains), ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
   --color-background: #ffffff;
   --color-foreground: #0f172a;
 
@@ -12,6 +20,72 @@
   --color-dk-surface: #15151d;   /* cards / panels           */
   --color-dk-raised:  #1d1d28;   /* elevated / hover states  */
   --color-dk-border:  #28283a;   /* borders & dividers       */
+
+  /* ── Echofold brand tokens ─────────────────────────────────────── */
+  /* Primary — purple is the brand color */
+  --color-ef-purple-300: #c4b5fd;
+  --color-ef-purple-400: #a78bfa;
+  --color-ef-purple-500: #7c3aed;   /* primary actions */
+  --color-ef-purple-600: #6d28d9;   /* hover / depth   */
+  --color-ef-indigo-500: #6366f1;   /* secondary brand */
+
+  /* Signal — the cyan accent used for live/listening states only */
+  --color-ef-signal: #06b6d4;
+  --color-ef-signal-soft: #22d3ee;
+
+  /* Sentiment — semantic, used in the listening UI */
+  --color-ef-positive: #10b981;
+  --color-ef-neutral:  #94a3b8;
+  --color-ef-negative: #ef4444;
+  --color-ef-alert:    #f59e0b;
+}
+
+/* CSS variables exposed to JS / inline styles (logo two-tone, motion, etc) */
+:root {
+  --ef-signal: #06b6d4;
+  --ef-purple: #7c3aed;
+  --ef-radius-card: 16px;
+  --ef-radius-pill: 9999px;
+  --ef-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ef-duration-fast: 150ms;
+  --ef-duration-base: 220ms;
+}
+
+/* ── Echofold motion: echo-pulse ────────────────────────────────── */
+/* Used on listening indicators, live counters, and the brand mark hero. */
+@keyframes ef-echo-pulse {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  70%  { transform: scale(2.2); opacity: 0;    }
+  100% { transform: scale(2.2); opacity: 0;    }
+}
+
+.ef-echo-pulse {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+}
+
+.ef-echo-pulse::before,
+.ef-echo-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1.5px solid var(--ef-signal);
+  animation: ef-echo-pulse 2.4s var(--ef-ease-out) infinite;
+}
+
+.ef-echo-pulse::after {
+  animation-delay: 1.2s;
+}
+
+/* Reduced motion: no infinite pulses */
+@media (prefers-reduced-motion: reduce) {
+  .ef-echo-pulse::before,
+  .ef-echo-pulse::after {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 /* Pointer cursor for all interactive elements */
@@ -24,6 +98,17 @@ input[type="checkbox"],
 input[type="radio"],
 input[type="range"] {
   cursor: pointer;
+}
+
+/* Body bg follows theme so the page never flashes white when toggling */
+html, body {
+  background-color: #fafafc;
+  color: #0f172a;
+}
+
+.dark html, .dark body, html.dark, html.dark body {
+  background-color: #0e0e13;
+  color: #e2e0ea;
 }
 
 /* Custom scrollbar */
