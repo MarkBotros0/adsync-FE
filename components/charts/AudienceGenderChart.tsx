@@ -40,7 +40,10 @@ export function AudienceGenderChart({ data }: AudienceGenderChartProps) {
           ))}
         </Pie>
         <Tooltip
-          formatter={(value: number, name: string) => [`${value} (${((value / total) * 100).toFixed(1)}%)`, name]}
+          formatter={(value, name) => {
+            const v = typeof value === 'number' ? value : 0;
+            return [`${v} (${((v / total) * 100).toFixed(1)}%)`, String(name)];
+          }}
         />
       </PieChart>
     </ResponsiveContainer>
