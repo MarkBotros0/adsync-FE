@@ -39,6 +39,7 @@ import { WebsiteTab } from '@/components/competitor/tabs/WebsiteTab';
 import { PlacesTab } from '@/components/competitor/tabs/PlacesTab';
 import { useActorResults } from '@/hooks/useActorResults';
 import { useBrandUsage } from '@/hooks/useBrandUsage';
+import { EchofoldSpinner } from '@/components/brand/echofold-spinner';
 
 export default function CompetitorDetailPage() {
   const params = useParams<{ id: string }>();
@@ -431,19 +432,8 @@ function mergeStatus<T>(
 
 function DetailSkeleton() {
   return (
-    <div className="flex h-full flex-col bg-slate-50 dark:bg-dk-bg">
-      <div className="h-32 animate-pulse border-b border-slate-200 bg-white dark:border-dk-border dark:bg-dk-surface" />
-      <div className="flex-1 space-y-3 px-5 py-6 md:px-8">
-        <div className="h-10 w-1/2 animate-pulse rounded-md bg-slate-100 dark:bg-dk-surface" />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              className="h-48 animate-pulse rounded-xl border border-slate-200 bg-white dark:border-dk-border dark:bg-dk-surface"
-            />
-          ))}
-        </div>
-      </div>
+    <div className="flex h-full items-center justify-center bg-slate-50 dark:bg-dk-bg">
+      <EchofoldSpinner size="md" label="Loading competitor" />
     </div>
   );
 }

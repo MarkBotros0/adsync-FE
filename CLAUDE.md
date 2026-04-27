@@ -1,4 +1,79 @@
-# Frontend (ad-sync-fe) — Claude Notes
+# Frontend (echofold-fe) — Claude Notes
+
+> **Product name: Echofold.** The repo is still named `ad-sync-fe` for historical reasons. All user-facing copy, metadata, and assets must say "Echofold." Do not introduce "AdSync" anywhere new.
+
+---
+
+## Echofold Brand System (read this before adding any UI)
+
+Every new screen, empty state, loader, modal, or marketing surface must compose from these primitives. Do not reinvent them, do not introduce new spinner styles, and do not write a generic empty state — use the components below.
+
+### Brand voice
+- Calm-intelligent, agency-grade. Senior strategist, not growth hacker.
+- Owned vocabulary: *echo*, *signal*, *listening*, *fold*, *wave*. Use deliberately, never as filler.
+- Verbs over adjectives. *"Hear every echo of your brand"* beats *"Powerful AI-driven monitoring."*
+
+### Brand components (`components/brand/`)
+| Component | Use when |
+|---|---|
+| `<EchofoldLogo />` | Anywhere you'd put a logo glyph. Variants: `mono` / `duo`. Sizes: `sm` / `md` / `lg`. |
+| `<EchofoldMark />` | Logo + wordmark lockup (sidebar, hero, marketing). |
+| `<EchofoldEmptyState />` | **Every** empty state. Replaces ad-hoc *"No data" / "📭 nothing here"* divs. Takes `icon`, `badge`, `title`, `description`, optional `action`. |
+| `<EchofoldSpinner />` | **Every** loading indicator that takes more than ~300ms or covers ≥30% of the viewport. Replaces `animate-spin border-t-purple-600` rings and `animate-pulse` skeleton blocks. |
+
+When you find a generic spinner / skeleton / empty state in code you're touching, replace it with the brand component instead of preserving it.
+
+### Brand tokens (declared in `app/globals.css` `@theme`)
+| Token | Tailwind | Use for |
+|---|---|---|
+| Primary purple | `bg-purple-500/600/700` (existing scale) | Primary actions, brand surfaces, gradients to indigo |
+| Indigo accent | `bg-indigo-500/600` | Gradient pairing with purple on the brand pill |
+| Signal cyan | `var(--ef-signal)` / `bg-cyan-400` | Live/listening indicators ONLY. Not for general UI. |
+| Sentiment | `text-emerald-300` / `text-rose-300` / `text-slate-300` | Positive / negative / neutral chips |
+| Alert | `text-amber-300` | Warning states, alert spikes |
+| Surfaces | `bg-white dark:bg-dk-surface`, `bg-slate-50 dark:bg-dk-bg`, `border-slate-200 dark:border-dk-border` | All chrome — use these tokens, not hardcoded hex |
+
+### Motion primitives
+- `.ef-echo-pulse` — concentric expanding cyan rings. Used for:
+  - Live data indicators ("Listening", "x platforms connected")
+  - The brand mark on hero / auth pages
+  - Live counters
+  - **Not** for general loading spinners — use `<EchofoldSpinner />` for that.
+- Standard ease: `cubic-bezier(0.2, 0.8, 0.2, 1)` (`var(--ef-ease-out)`)
+- Standard durations: `--ef-duration-fast: 150ms`, `--ef-duration-base: 220ms`
+- All infinite animations must be disabled under `@media (prefers-reduced-motion: reduce)` — `.ef-echo-pulse` already handles this.
+
+### Typography
+| Class | Family | Use for |
+|---|---|---|
+| `font-sans` (default) | Inter | All body, UI, labels. Don't override unless using a display or mono. |
+| `font-display` | Manrope (700 / 800) | Landing headlines (`<h1>`, `<h2>` on `/`, `/login`), plan prices, hero numbers. **Never** use on dashboard headers — display fonts at small sizes look amateurish. |
+| `font-mono tabular-nums` | JetBrains Mono | Stat counters, IDs, timestamps, step markers. Always pair with `tabular-nums` so digits don't jitter on update. |
+
+Headline tracking: `tracking-[-0.02em]` to `tracking-[-0.025em]` on display headlines. Eyebrow labels: uppercase + `tracking-[0.16em]`.
+
+### Light theme
+The app supports light + dark via the `dark:` Tailwind variant.
+- Default page bg: `bg-slate-50 dark:bg-dk-bg`
+- Default surface: `bg-white dark:bg-dk-surface`
+- Default border: `border-slate-200 dark:border-dk-border`
+- **Never** use `bg-white/6` or `text-white/40` style alpha-on-white classes without a `dark:` prefix or a light-mode counterpart (e.g. `bg-slate-100 dark:bg-white/6`). These break light theme.
+- **Never** hardcode dark-only inline styles (e.g. `style={{ background: '#15151d' }}`) on shared chrome. The Sidebar's gradient is the one allowed exception, and it's gated behind `dark:`.
+
+### Marketing surfaces (always-dark, by design)
+The landing page (`/`) and login page (`/login`) are intentionally dark across themes. New marketing surfaces (pricing, blog, docs) should follow the same convention. Everything else respects the user's theme.
+
+### Don'ts
+- Don't add a new "Coming Soon" placeholder by hand — use `<EchofoldEmptyState badge="Coming Soon" ... />`.
+- Don't write `<div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-purple-600 animate-spin" />`. Use `<EchofoldSpinner />`.
+- Don't introduce additional fonts. The three-font system is intentional.
+- Don't use `font-display` on items smaller than `text-2xl`.
+- Don't write `text-white` without a light-theme counterpart on shared dashboard chrome.
+- Don't put non-cyan colors inside `.ef-echo-pulse`. Cyan is the "echo signal" color.
+
+---
+
+## Architecture — Multi-Tenant Organization Model
 
 ## Architecture — Multi-Tenant Organization Model
 

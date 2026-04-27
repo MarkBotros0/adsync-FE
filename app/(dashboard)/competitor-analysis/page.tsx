@@ -14,6 +14,7 @@ import {
   COMPETITOR_JOB_POLL_MAX_DURATION_MS,
 } from '@/lib/constants';
 import type { Competitor } from '@/lib/types';
+import { EchofoldSpinner } from '@/components/brand/echofold-spinner';
 
 export default function CompetitorAnalysisPage() {
   const { token, isLoading: authLoading } = useBrandAuthContext();
@@ -144,13 +145,8 @@ export default function CompetitorAnalysisPage() {
 
 function ListSkeleton() {
   return (
-    <div className="space-y-3">
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          className="h-20 animate-pulse rounded-xl border border-slate-200 bg-white dark:border-dk-border dark:bg-dk-surface"
-        />
-      ))}
+    <div className="flex min-h-[40vh] items-center justify-center">
+      <EchofoldSpinner size="md" label="Loading competitors" />
     </div>
   );
 }
