@@ -8,12 +8,12 @@ import type { PublishDraft } from '@/lib/types';
 import { EchofoldEmptyState } from '@/components/brand/echofold-empty-state';
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-slate-200 text-slate-700',
-  pending_approval: 'bg-amber-100 text-amber-700',
-  scheduled: 'bg-cyan-100 text-cyan-700',
-  publishing: 'bg-purple-200 text-purple-800',
-  published: 'bg-emerald-100 text-emerald-700',
-  failed: 'bg-rose-100 text-rose-700',
+  draft: 'bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-200',
+  pending_approval: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300',
+  scheduled: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-300',
+  publishing: 'bg-purple-200 text-purple-800 dark:bg-purple-500/30 dark:text-purple-200',
+  published: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300',
+  failed: 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300',
 };
 
 function startOfMonth(d: Date) {
@@ -68,75 +68,81 @@ export default function CalendarPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 dark:border-dk-border dark:bg-dk-surface">
-        <div>
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-4 dark:border-dk-border dark:bg-dk-surface sm:px-6">
+        <div className="min-w-0">
           <h1 className="text-base font-bold text-slate-900 dark:text-purple-100">{monthLabel}</h1>
-          <p className="text-sm text-slate-500">Drag-to-reschedule coming soon — click a post to edit.</p>
+          <p className="text-sm text-slate-500 dark:text-purple-400">Drag-to-reschedule coming soon — click a post to edit.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
-            className="rounded-md border border-slate-200 px-3 py-1.5 text-sm hover:bg-slate-50 dark:border-dk-border"
+            className="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:border-dk-border dark:text-purple-200 dark:hover:bg-dk-raised"
           >
             ←
           </button>
           <button
             type="button"
             onClick={() => setCursor(new Date())}
-            className="rounded-md border border-slate-200 px-3 py-1.5 text-sm hover:bg-slate-50 dark:border-dk-border"
+            className="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:border-dk-border dark:text-purple-200 dark:hover:bg-dk-raised"
           >
             Today
           </button>
           <button
             type="button"
             onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
-            className="rounded-md border border-slate-200 px-3 py-1.5 text-sm hover:bg-slate-50 dark:border-dk-border"
+            className="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:border-dk-border dark:text-purple-200 dark:hover:bg-dk-raised"
           >
             →
           </button>
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto bg-slate-50 p-6 dark:bg-dk-bg">
+      <div className="flex-1 min-w-0 overflow-y-auto bg-slate-50 p-4 dark:bg-dk-bg sm:p-6">
         {loading && (
-          <div className="flex items-center gap-2 text-sm text-slate-500">
+          <div className="mb-2 flex items-center gap-2 text-sm text-slate-500 dark:text-purple-400">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading…
           </div>
         )}
 
-        <div className="grid grid-cols-7 gap-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
-          {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
-            <div key={d} className="px-2 py-1">{d}</div>
-          ))}
-        </div>
-        <div className="mt-1 grid grid-cols-7 gap-1">
-          {days.map((d) => {
-            const inMonth = d.getMonth() === cursor.getMonth();
-            const k = d.toISOString().slice(0, 10);
-            const dayPosts = postsByDay.get(k) ?? [];
-            return (
-              <div
-                key={k}
-                className={`min-h-[110px] rounded-md border p-2 ${
-                  inMonth ? 'bg-white dark:bg-dk-surface' : 'bg-slate-100/50 dark:bg-dk-bg/40 opacity-60'
-                } border-slate-200 dark:border-dk-border`}
-              >
-                <div className="mb-1 text-xs text-slate-500">{d.getDate()}</div>
-                <div className="space-y-1">
-                  {dayPosts.map(p => (
-                    <div
-                      key={p.id}
-                      className={`truncate rounded px-1.5 py-0.5 text-[11px] ${STATUS_COLORS[p.status] ?? 'bg-slate-200 text-slate-700'}`}
-                      title={`${p.text || '(no text)'} — ${p.platforms_json.join(', ')}`}
-                    >
-                      {p.text?.slice(0, 28) || '(no text)'}
+        {/* Calendar is a fixed 7-column grid → wrap in a horizontal scroller so
+            mobile shows a swipeable week grid instead of breaking the page layout. */}
+        <div className="overflow-x-auto">
+          <div className="min-w-[640px]">
+            <div className="grid grid-cols-7 gap-1 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-purple-400">
+              {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
+                <div key={d} className="px-2 py-1">{d}</div>
+              ))}
+            </div>
+            <div className="mt-1 grid grid-cols-7 gap-1">
+              {days.map((d) => {
+                const inMonth = d.getMonth() === cursor.getMonth();
+                const k = d.toISOString().slice(0, 10);
+                const dayPosts = postsByDay.get(k) ?? [];
+                return (
+                  <div
+                    key={k}
+                    className={`min-h-[100px] rounded-md border p-2 ${
+                      inMonth ? 'bg-white dark:bg-dk-surface' : 'bg-slate-100/50 opacity-60 dark:bg-dk-bg/40'
+                    } border-slate-200 dark:border-dk-border`}
+                  >
+                    <div className="mb-1 text-xs text-slate-500 dark:text-purple-400">{d.getDate()}</div>
+                    <div className="space-y-1">
+                      {dayPosts.map(p => (
+                        <div
+                          key={p.id}
+                          className={`truncate rounded px-1.5 py-0.5 text-[11px] ${STATUS_COLORS[p.status] ?? STATUS_COLORS.draft}`}
+                          title={`${p.text || '(no text)'} — ${p.platforms_json.join(', ')}`}
+                        >
+                          {p.text?.slice(0, 28) || '(no text)'}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </div>

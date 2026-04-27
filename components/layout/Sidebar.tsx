@@ -21,7 +21,6 @@ import {
   Crosshair,
   Send,
   Calendar,
-  Image as ImageIcon,
   CheckCircle2,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -52,7 +51,6 @@ const primaryNav = [
   { name: 'Analytics',            href: '/analytics',            icon: BarChart2     },
   { name: 'Compose',              href: '/publish/compose',      icon: Send          },
   { name: 'Calendar',             href: '/publish/calendar',     icon: Calendar      },
-  { name: 'Media library',        href: '/publish/media',        icon: ImageIcon     },
   { name: 'Approvals',            href: '/publish/approvals',    icon: CheckCircle2  },
   { name: 'Competitor Analysis',  href: '/competitor-analysis',  icon: Crosshair     },
   { name: 'AI Digest',            href: '/ai-digest',            icon: Sparkles,  badge: 'Soon' },

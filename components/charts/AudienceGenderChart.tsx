@@ -1,6 +1,7 @@
 'use client';
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { useTheme } from '@/contexts/theme-context';
 
 interface AudienceGenderChartProps {
   data: { female: number; male: number; unspecified: number };
@@ -10,6 +11,11 @@ const COLORS = ['#a855f7', '#06b6d4', '#94a3b8'];
 
 /** Donut of the marketing-expert spec's gender chart (#4 in the deck). */
 export function AudienceGenderChart({ data }: AudienceGenderChartProps) {
+  const { theme } = useTheme();
+  const tooltipStyle = theme === 'dark'
+    ? { fontSize: 11, borderRadius: 6, border: '1px solid #3b1f6a', background: '#1a0a2e', color: '#e9d5ff' }
+    : { fontSize: 11, borderRadius: 6 };
+
   const rows = [
     { name: 'Female', value: data.female ?? 0 },
     { name: 'Male', value: data.male ?? 0 },
@@ -19,7 +25,7 @@ export function AudienceGenderChart({ data }: AudienceGenderChartProps) {
 
   if (total === 0) {
     return (
-      <div className="flex h-[220px] items-center justify-center text-sm text-slate-500">
+      <div className="flex h-[220px] items-center justify-center text-sm text-slate-500 dark:text-purple-400">
         No audience-gender data yet
       </div>
     );
@@ -40,6 +46,7 @@ export function AudienceGenderChart({ data }: AudienceGenderChartProps) {
           ))}
         </Pie>
         <Tooltip
+          contentStyle={tooltipStyle}
           formatter={(value, name) => {
             const v = typeof value === 'number' ? value : 0;
             return [`${v} (${((v / total) * 100).toFixed(1)}%)`, String(name)];

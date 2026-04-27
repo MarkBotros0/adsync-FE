@@ -32,15 +32,15 @@ export function PeriodOverPeriodCard({
   return (
     <div
       className={cn(
-        'rounded-xl border border-slate-200 bg-white p-4 shadow-sm',
+        'min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm',
         'dark:border-dk-border dark:bg-dk-surface',
         className,
       )}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+      <p className="truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
         {label}
       </p>
-      <p className="mt-2 font-mono text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-50">
+      <p className="mt-2 truncate font-mono text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-50">
         {value}
         {unit ? <span className="ml-1 text-base font-normal text-slate-500">{unit}</span> : null}
       </p>

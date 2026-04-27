@@ -29,7 +29,9 @@ interface TabsListProps {
 
 export function TabsList({ children, className = "" }: TabsListProps) {
   return (
-    <div className={`inline-flex h-10 items-center justify-center rounded-md bg-slate-100 p-1 text-slate-500 ${className}`}>
+    <div
+      className={`inline-flex h-10 max-w-full items-center justify-start gap-0.5 overflow-x-auto rounded-md bg-slate-100 p-1 text-slate-500 dark:bg-dk-raised dark:text-purple-400 ${className}`}
+    >
       {children}
     </div>
   )
@@ -53,10 +55,10 @@ export function TabsTrigger({ value, children, className = "", disabled = false 
       type="button"
       disabled={disabled}
       onClick={() => !disabled && context.onValueChange(value)}
-      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
+      className={`inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
         isActive
-          ? "bg-white text-slate-950 shadow-sm"
-          : "text-slate-600 hover:text-slate-900"
+          ? "bg-white text-slate-950 shadow-sm dark:bg-dk-surface dark:text-purple-100"
+          : "text-slate-600 hover:text-slate-900 dark:text-purple-400 dark:hover:text-purple-100"
       } ${className}`}
     >
       {children}

@@ -76,13 +76,13 @@ export default function ReportsPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="border-b border-slate-200 bg-white px-6 py-4 dark:border-dk-border dark:bg-dk-surface">
+      <header className="border-b border-slate-200 bg-white px-4 py-4 dark:border-dk-border dark:bg-dk-surface sm:px-6">
         <h1 className="text-base font-bold text-slate-900 dark:text-purple-100">Reports</h1>
-        <p className="text-sm text-slate-500">Branded PDF reports and scheduled email delivery.</p>
+        <p className="text-sm text-slate-500 dark:text-purple-400">Branded PDF reports and scheduled email delivery.</p>
       </header>
 
-      <div className="flex-1 overflow-y-auto bg-slate-50 p-6 dark:bg-dk-bg">
-        <Tabs value={tab} onValueChange={setTab}>
+      <div className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 dark:bg-dk-bg sm:p-6">
+        <Tabs value={tab} onValueChange={setTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="one-off">Generate now</TabsTrigger>
             <TabsTrigger value="schedules">Schedules</TabsTrigger>
@@ -91,31 +91,33 @@ export default function ReportsPage() {
 
           <TabsContent value="one-off" className="space-y-4">
             <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-dk-border dark:bg-dk-surface">
-              <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-purple-400">
                 Window (days)
               </label>
-              <input
-                type="number"
-                min={1}
-                max={365}
-                value={windowDays}
-                onChange={(e) => setWindowDays(Math.max(1, Math.min(365, Number(e.target.value))))}
-                className="mt-2 w-32 rounded-md border border-slate-200 bg-slate-50 p-2 text-sm dark:border-dk-border dark:bg-dk-bg dark:text-slate-100"
-              />
-              <button
-                onClick={handleGenerate}
-                disabled={generating}
-                className="ml-3 inline-flex items-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-50"
-              >
-                {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                Generate PDF
-              </button>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <input
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={windowDays}
+                  onChange={(e) => setWindowDays(Math.max(1, Math.min(365, Number(e.target.value))))}
+                  className="w-32 rounded-md border border-slate-200 bg-slate-50 p-2 text-sm dark:border-dk-border dark:bg-dk-bg dark:text-slate-100"
+                />
+                <button
+                  onClick={handleGenerate}
+                  disabled={generating}
+                  className="inline-flex items-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  Generate PDF
+                </button>
+              </div>
             </div>
           </TabsContent>
 
           <TabsContent value="schedules" className="space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-500">{schedules.length} scheduled report{schedules.length === 1 ? '' : 's'}.</p>
+              <p className="text-sm text-slate-500 dark:text-purple-400">{schedules.length} scheduled report{schedules.length === 1 ? '' : 's'}.</p>
               <button
                 onClick={handleCreateSchedule}
                 className="inline-flex items-center gap-2 rounded-md bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700"
@@ -134,19 +136,19 @@ export default function ReportsPage() {
                 {schedules.map(s => (
                   <li
                     key={s.id}
-                    className="flex items-start justify-between rounded-lg border border-slate-200 bg-white p-4 dark:border-dk-border dark:bg-dk-surface"
+                    className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-dk-border dark:bg-dk-surface"
                   >
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-semibold text-slate-800 dark:text-purple-100">{s.name}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-slate-500 dark:text-purple-400">
                         {s.cadence} · next run {new Date(s.next_sent_at).toLocaleString()}
                       </p>
-                      <p className="text-xs text-slate-500">to {s.recipients_csv}</p>
+                      <p className="break-all text-xs text-slate-500 dark:text-purple-400">to {s.recipients_csv}</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex shrink-0 gap-2">
                       <button
                         onClick={() => handleRunNow(s.id)}
-                        className="rounded-md border border-slate-200 px-3 py-1 text-xs hover:bg-slate-50 dark:border-dk-border"
+                        className="rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-700 hover:bg-slate-50 dark:border-dk-border dark:text-purple-200 dark:hover:bg-dk-raised"
                       >
                         Run now
                       </button>
@@ -176,23 +178,23 @@ export default function ReportsPage() {
                 {runs.map(r => (
                   <li
                     key={r.id}
-                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4 dark:border-dk-border dark:bg-dk-surface"
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-dk-border dark:bg-dk-surface"
                   >
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-semibold text-slate-800 dark:text-purple-100">
                         {new Date(r.period_start).toLocaleDateString()} → {new Date(r.period_end).toLocaleDateString()}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-slate-500 dark:text-purple-400">
                         {r.status} · {r.generated_at ? new Date(r.generated_at).toLocaleString() : 'pending'}
                       </p>
-                      {r.error_message && <p className="text-xs text-rose-600">{r.error_message}</p>}
+                      {r.error_message && <p className="text-xs text-rose-500 dark:text-rose-400">{r.error_message}</p>}
                     </div>
                     {r.status === 'ready' && (
                       <a
                         href={reportsAPI.pdfUrl(r.id)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900"
+                        className="inline-flex shrink-0 items-center gap-1 rounded-md bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700"
                       >
                         <Download className="h-3 w-3" /> PDF
                       </a>

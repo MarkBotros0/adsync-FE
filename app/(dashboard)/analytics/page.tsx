@@ -371,7 +371,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-slate-50 dark:bg-dk-bg">
+      <div className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto p-5 space-y-5 bg-slate-50 dark:bg-dk-bg">
 
         {/* ── Top-of-page KPI tiles (marketing-expert spec) ── */}
         <section className="space-y-3">
@@ -414,13 +414,15 @@ export default function AnalyticsPage() {
 
         {/* ── Tabs ── */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
-          <TabsList className="overflow-x-auto whitespace-nowrap">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="audience">Audience</TabsTrigger>
-            <TabsTrigger value="content">Content</TabsTrigger>
-            <TabsTrigger value="hashtags">Hashtags</TabsTrigger>
-            <TabsTrigger value="grade">Post Grade</TabsTrigger>
-          </TabsList>
+          <div className="-mx-1 max-w-full overflow-x-auto px-1">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="audience">Audience</TabsTrigger>
+              <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="hashtags">Hashtags</TabsTrigger>
+              <TabsTrigger value="grade">Post Grade</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="overview" className="space-y-5">
             <VolumeReachChart data={volumeData} />

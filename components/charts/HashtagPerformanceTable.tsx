@@ -63,7 +63,7 @@ export function HashtagPerformanceTable({ posts, limit = 25 }: HashtagPerformanc
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white dark:border-dk-border dark:bg-dk-surface">
       <table className="w-full text-sm">
-        <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 dark:bg-dk-bg dark:text-slate-400">
+        <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 dark:bg-dk-bg dark:text-purple-400">
           <tr>
             <th className="px-4 py-2 text-left">Hashtag</th>
             <th className="px-4 py-2 text-right">Uses</th>
@@ -75,7 +75,10 @@ export function HashtagPerformanceTable({ posts, limit = 25 }: HashtagPerformanc
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.tag} className="border-t border-slate-100 dark:border-dk-border">
+            <tr
+              key={r.tag}
+              className="border-t border-slate-100 text-slate-700 dark:border-dk-border dark:text-purple-100"
+            >
               <td className="px-4 py-2 font-mono text-purple-600 dark:text-purple-400">{r.tag}</td>
               <td className="px-4 py-2 text-right font-mono tabular-nums">{r.uses}</td>
               <td className="px-4 py-2 text-right font-mono tabular-nums">{r.totalReach.toLocaleString()}</td>

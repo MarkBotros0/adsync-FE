@@ -872,10 +872,9 @@ export const publishAPI = {
       headers: _brandAuthHeaders(token),
     }),
 
-  listMedia: (token: string, kind?: 'image' | 'video') =>
-    api.get('/publish/media', {
-      headers: _brandAuthHeaders(token), params: { kind },
-    }),
+  // Media is uploaded inline by the composer — no library list / delete endpoints
+  // are exposed to the FE. Files only exist for the lifetime of the post they
+  // were attached to.
   uploadMedia: (token: string, file: File) => {
     const fd = new FormData();
     fd.append('upload', file);
@@ -884,8 +883,6 @@ export const publishAPI = {
     });
   },
   mediaRawUrl: (assetId: number) => `${API_BASE_URL}/publish/media/${assetId}/raw`,
-  deleteMedia: (token: string, id: number) =>
-    api.delete(`/publish/media/${id}`, { headers: _brandAuthHeaders(token) }),
 };
 
 // ─── Reports ───────────────────────────────────────────────────────────────

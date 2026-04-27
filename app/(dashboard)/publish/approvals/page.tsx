@@ -48,24 +48,24 @@ export default function ApprovalsPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="border-b border-slate-200 bg-white px-6 py-4 dark:border-dk-border dark:bg-dk-surface">
+      <header className="border-b border-slate-200 bg-white px-4 py-4 dark:border-dk-border dark:bg-dk-surface sm:px-6">
         <h1 className="text-base font-bold text-slate-900 dark:text-purple-100">Pending approvals</h1>
-        <p className="text-sm text-slate-500">{pending.length} draft{pending.length === 1 ? '' : 's'} awaiting review.</p>
+        <p className="text-sm text-slate-500 dark:text-purple-400">{pending.length} draft{pending.length === 1 ? '' : 's'} awaiting review.</p>
       </header>
 
-      <div className="flex-1 overflow-y-auto bg-slate-50 p-6 dark:bg-dk-bg">
+      <div className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 dark:bg-dk-bg sm:p-6">
         <ul className="space-y-3">
           {pending.map(d => (
             <li
               key={d.id}
-              className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-dk-border dark:bg-dk-surface"
+              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-dk-border dark:bg-dk-surface sm:p-5"
             >
-              <div className="mb-2 flex items-start justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Draft #{d.id}</p>
-                  <p className="text-sm text-slate-700 dark:text-slate-200">{d.text || '(no caption)'}</p>
+              <div className="mb-2 flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-purple-400">Draft #{d.id}</p>
+                  <p className="text-sm text-slate-700 dark:text-purple-100">{d.text || '(no caption)'}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex shrink-0 gap-2">
                   <button
                     onClick={() => handleApprove(d.id)}
                     className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
@@ -82,7 +82,7 @@ export default function ApprovalsPage() {
                   </button>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+              <div className="flex flex-wrap gap-2 text-xs text-slate-500 dark:text-purple-400">
                 <span>{d.platforms_json.join(', ')}</span>
                 {d.scheduled_at && <span>• Scheduled {new Date(d.scheduled_at).toLocaleString()}</span>}
                 {d.media_asset_ids_json.length > 0 && <span>• {d.media_asset_ids_json.length} media</span>}
