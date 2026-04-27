@@ -670,4 +670,262 @@ export const usageAPI = {
     }),
 };
 
+// ─── Analytics Overview API (marketing-expert spec) ────────────────────────
+
+export const analyticsAPI = {
+  /** POST the brand's posts list; server returns top-of-page KPIs + ERR + Grade dist. */
+  overview: (
+    token: string,
+    posts: Record<string, unknown>[],
+    follower_count_start?: number,
+    follower_count_end?: number,
+  ) =>
+    api.post('/analytics/overview', posts, {
+      headers: _brandAuthHeaders(token),
+      params: { follower_count_start, follower_count_end },
+    }),
+
+  audienceGender: (token: string) =>
+    api.get<{ success: boolean; data: { female: number; male: number; unspecified: number } }>(
+      '/analytics/audience/gender',
+      { headers: _brandAuthHeaders(token) },
+    ),
+
+  audienceAge: (token: string) =>
+    api.get<{ success: boolean; data: Record<string, number> }>(
+      '/analytics/audience/age',
+      { headers: _brandAuthHeaders(token) },
+    ),
+
+  followersGrowth: (token: string, since?: string, until?: string) =>
+    api.get<{ success: boolean; data: {
+      follower_count_start: number;
+      follower_count_end: number;
+      growth_rate_pct: number | null;
+      series: { value: number; end_time: string }[];
+      period: { since: string; until: string };
+    } }>('/analytics/followers/growth', {
+      headers: _brandAuthHeaders(token), params: { since, until },
+    }),
+};
+
+// ─── Facebook Insights v2 (brand-JWT) ──────────────────────────────────────
+
+export const facebookInsightsAPI = {
+  pageDemographics: (token: string, since?: string, until?: string) =>
+    api.get('/facebook/insights/page/demographics', {
+      headers: _brandAuthHeaders(token), params: { since, until },
+    }),
+  pageReachBreakdown: (token: string, since?: string, until?: string, compare = false) =>
+    api.get('/facebook/insights/page/reach-breakdown', {
+      headers: _brandAuthHeaders(token), params: { since, until, compare },
+    }),
+  pageFrequency: (token: string, since?: string, until?: string) =>
+    api.get('/facebook/insights/page/frequency', {
+      headers: _brandAuthHeaders(token), params: { since, until },
+    }),
+};
+
+// ─── Facebook Ads (full marketer KPIs) ─────────────────────────────────────
+
+export const facebookAdsAPI = {
+  accounts: (token: string) =>
+    api.get('/facebook/ads/accounts', { headers: _brandAuthHeaders(token) }),
+  accountSummary: (token: string, accountId: string, since?: string, until?: string, compare = true) =>
+    api.get(`/facebook/ads/${accountId}/insights/summary`, {
+      headers: _brandAuthHeaders(token), params: { since, until, compare },
+    }),
+  series: (token: string, accountId: string, since?: string, until?: string, granularity = '1') =>
+    api.get(`/facebook/ads/${accountId}/insights/series`, {
+      headers: _brandAuthHeaders(token), params: { since, until, granularity },
+    }),
+  byCampaign: (token: string, accountId: string, since?: string, until?: string) =>
+    api.get(`/facebook/ads/${accountId}/insights/by-campaign`, {
+      headers: _brandAuthHeaders(token), params: { since, until },
+    }),
+  byAd: (token: string, accountId: string, since?: string, until?: string) =>
+    api.get(`/facebook/ads/${accountId}/insights/by-ad`, {
+      headers: _brandAuthHeaders(token), params: { since, until },
+    }),
+  demographics: (token: string, accountId: string, since?: string, until?: string) =>
+    api.get(`/facebook/ads/${accountId}/insights/demographics`, {
+      headers: _brandAuthHeaders(token), params: { since, until },
+    }),
+  geo: (token: string, accountId: string, since?: string, until?: string) =>
+    api.get(`/facebook/ads/${accountId}/insights/geo`, {
+      headers: _brandAuthHeaders(token), params: { since, until },
+    }),
+  placement: (token: string, accountId: string, since?: string, until?: string) =>
+    api.get(`/facebook/ads/${accountId}/insights/placement`, {
+      headers: _brandAuthHeaders(token), params: { since, until },
+    }),
+};
+
+// ─── TikTok Ads ────────────────────────────────────────────────────────────
+
+export const tiktokAdsAPI = {
+  advertisers: (token: string) =>
+    api.get('/tiktok/ads/advertisers', { headers: _brandAuthHeaders(token) }),
+  accountSummary: (token: string, advertiserId: string, since?: string, until?: string, compare = true) =>
+    api.get(`/tiktok/ads/${advertiserId}/insights/summary`, {
+      headers: _brandAuthHeaders(token), params: { since, until, compare },
+    }),
+  byCampaign: (token: string, advertiserId: string, since?: string, until?: string) =>
+    api.get(`/tiktok/ads/${advertiserId}/insights/by-campaign`, {
+      headers: _brandAuthHeaders(token), params: { since, until },
+    }),
+  byAd: (token: string, advertiserId: string, since?: string, until?: string) =>
+    api.get(`/tiktok/ads/${advertiserId}/insights/by-ad`, {
+      headers: _brandAuthHeaders(token), params: { since, until },
+    }),
+};
+
+// ─── Unified Ads Feed ──────────────────────────────────────────────────────
+
+export const adsFeedAPI = {
+  feed: (
+    token: string,
+    params: {
+      since?: string; until?: string; platforms?: string;
+      fb_account_id?: string; tiktok_advertiser_id?: string;
+    } = {},
+  ) => api.get('/ads/feed', { headers: _brandAuthHeaders(token), params }),
+};
+
+// ─── Instagram v2 (engagement totals + breakdowns + stories + comments) ────
+
+export const instagramV2API = {
+  engagementTotals: (token: string, days = 30) =>
+    api.get('/instagram/v2/engagement-totals', {
+      headers: _brandAuthHeaders(token), params: { days },
+    }),
+  reachByFollowType: (token: string, days = 30) =>
+    api.get('/instagram/v2/reach-by-follow-type', {
+      headers: _brandAuthHeaders(token), params: { days },
+    }),
+  reachByMediaProductType: (token: string, days = 30) =>
+    api.get('/instagram/v2/reach-by-media-product-type', {
+      headers: _brandAuthHeaders(token), params: { days },
+    }),
+  stories: (token: string, limit = 25) =>
+    api.get('/instagram/v2/stories', {
+      headers: _brandAuthHeaders(token), params: { limit },
+    }),
+  storyInsights: (token: string, storyId: string) =>
+    api.get(`/instagram/v2/stories/${storyId}/insights`, { headers: _brandAuthHeaders(token) }),
+  audience: (token: string) =>
+    api.get('/instagram/v2/audience', { headers: _brandAuthHeaders(token) }),
+  commentsAnalysis: (token: string, mediaId: string, limit = 50, includeReplies = true) =>
+    api.get(`/instagram/v2/media/${mediaId}/comments/analysis`, {
+      headers: _brandAuthHeaders(token),
+      params: { limit, include_replies: includeReplies },
+    }),
+};
+
+// ─── Campaign Tags ─────────────────────────────────────────────────────────
+
+export const campaignTagsAPI = {
+  list: (token: string) =>
+    api.get('/campaign-tags', { headers: _brandAuthHeaders(token) }),
+  create: (token: string, payload: { name: string; color?: string; description?: string }) =>
+    api.post('/campaign-tags', payload, { headers: _brandAuthHeaders(token) }),
+  update: (token: string, id: number, payload: { name?: string; color?: string; description?: string }) =>
+    api.patch(`/campaign-tags/${id}`, payload, { headers: _brandAuthHeaders(token) }),
+  remove: (token: string, id: number) =>
+    api.delete(`/campaign-tags/${id}`, { headers: _brandAuthHeaders(token) }),
+  attach: (token: string, payload: { platform: string; post_id: string; tag_ids: number[] }) =>
+    api.post('/campaign-tags/posts/attach', payload, { headers: _brandAuthHeaders(token) }),
+  lookup: (token: string, platform: string, post_id: string) =>
+    api.get('/campaign-tags/posts/lookup', {
+      headers: _brandAuthHeaders(token), params: { platform, post_id },
+    }),
+};
+
+// ─── Publish (composer / calendar / media) ─────────────────────────────────
+
+export const publishAPI = {
+  listDrafts: (token: string, status?: string) =>
+    api.get('/publish/drafts', {
+      headers: _brandAuthHeaders(token), params: { status_filter: status },
+    }),
+  createDraft: (token: string, payload: Record<string, unknown>) =>
+    api.post('/publish/drafts', payload, { headers: _brandAuthHeaders(token) }),
+  updateDraft: (token: string, id: number, payload: Record<string, unknown>) =>
+    api.patch(`/publish/drafts/${id}`, payload, { headers: _brandAuthHeaders(token) }),
+  deleteDraft: (token: string, id: number) =>
+    api.delete(`/publish/drafts/${id}`, { headers: _brandAuthHeaders(token) }),
+  submit: (token: string, id: number) =>
+    api.post(`/publish/drafts/${id}/submit`, {}, { headers: _brandAuthHeaders(token) }),
+  approve: (token: string, id: number) =>
+    api.post(`/publish/drafts/${id}/approve`, {}, { headers: _brandAuthHeaders(token) }),
+  reject: (token: string, id: number, reason: string) =>
+    api.post(`/publish/drafts/${id}/reject`, { reason }, { headers: _brandAuthHeaders(token) }),
+  cancel: (token: string, id: number) =>
+    api.post(`/publish/drafts/${id}/cancel`, {}, { headers: _brandAuthHeaders(token) }),
+
+  calendar: (token: string, from: string, to: string, statuses?: string) =>
+    api.get('/publish/calendar', {
+      headers: _brandAuthHeaders(token), params: { from, to, statuses },
+    }),
+  reschedule: (token: string, id: number, scheduled_at: string) =>
+    api.patch(`/publish/calendar/${id}/reschedule`, { scheduled_at }, {
+      headers: _brandAuthHeaders(token),
+    }),
+
+  listMedia: (token: string, kind?: 'image' | 'video') =>
+    api.get('/publish/media', {
+      headers: _brandAuthHeaders(token), params: { kind },
+    }),
+  uploadMedia: (token: string, file: File) => {
+    const fd = new FormData();
+    fd.append('upload', file);
+    return api.post('/publish/media', fd, {
+      headers: { ..._brandAuthHeaders(token), 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  mediaRawUrl: (assetId: number) => `${API_BASE_URL}/publish/media/${assetId}/raw`,
+  deleteMedia: (token: string, id: number) =>
+    api.delete(`/publish/media/${id}`, { headers: _brandAuthHeaders(token) }),
+};
+
+// ─── Reports ───────────────────────────────────────────────────────────────
+
+export const reportsAPI = {
+  generate: (token: string, payload: {
+    period_start: string; period_end: string; sections: string[]; kpis?: Record<string, unknown>;
+  }) => api.post('/reports/generate', payload, { headers: _brandAuthHeaders(token) }),
+  listRuns: (token: string, limit = 50) =>
+    api.get('/reports/runs', { headers: _brandAuthHeaders(token), params: { limit } }),
+  pdfUrl: (runId: number) => `${API_BASE_URL}/reports/runs/${runId}/pdf`,
+  listSchedules: (token: string) =>
+    api.get('/reports/schedules', { headers: _brandAuthHeaders(token) }),
+  createSchedule: (token: string, payload: {
+    name: string; cadence: 'weekly' | 'monthly'; recipients: string[]; template?: Record<string, unknown>;
+  }) => api.post('/reports/schedules', payload, { headers: _brandAuthHeaders(token) }),
+  deleteSchedule: (token: string, id: number) =>
+    api.delete(`/reports/schedules/${id}`, { headers: _brandAuthHeaders(token) }),
+  runScheduleNow: (token: string, id: number) =>
+    api.post(`/reports/schedules/${id}/run-now`, {}, { headers: _brandAuthHeaders(token) }),
+};
+
+// ─── Brand Identity ───────────────────────────────────────────────────────
+
+export const brandIdentityAPI = {
+  get: (token: string) =>
+    api.get('/brands/identity', { headers: _brandAuthHeaders(token) }),
+  update: (token: string, payload: {
+    primary_color?: string; secondary_color?: string; font_family?: string;
+    white_label_subdomain?: string; logo?: File;
+  }) => {
+    const fd = new FormData();
+    Object.entries(payload).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) fd.append(k, v as Blob | string);
+    });
+    return api.put('/brands/identity', fd, {
+      headers: { ..._brandAuthHeaders(token), 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  logoUrl: () => `${API_BASE_URL}/brands/identity/logo`,
+};
+
 export default api;

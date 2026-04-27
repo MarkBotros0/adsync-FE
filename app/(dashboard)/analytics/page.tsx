@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Plug, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import { StatsBar } from '@/components/content/StatsBar';
 import { EchofoldEmptyState } from '@/components/brand/echofold-empty-state';
 import { EchofoldSpinner } from '@/components/brand/echofold-spinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VolumeReachChart } from '@/components/charts/VolumeReachChart';
 import { SentimentTimelineChart } from '@/components/charts/SentimentTimelineChart';
 import { InteractionsChart } from '@/components/charts/InteractionsChart';
@@ -14,9 +15,17 @@ import { BestTimeHeatmap } from '@/components/charts/BestTimeHeatmap';
 import { TrendingHashtagsChart } from '@/components/charts/TrendingHashtagsChart';
 import { PostFormatChart } from '@/components/charts/PostFormatChart';
 import { FollowersGrowthChart } from '@/components/charts/FollowersGrowthChart';
+import { PeriodOverPeriodCard } from '@/components/charts/PeriodOverPeriodCard';
+import { GradeDistributionChart } from '@/components/charts/GradeDistributionChart';
+import { AudienceGenderChart } from '@/components/charts/AudienceGenderChart';
+import { AudienceAgeChart } from '@/components/charts/AudienceAgeChart';
+import { HashtagPerformanceTable } from '@/components/charts/HashtagPerformanceTable';
 import { useFilters, getDateRange } from '@/contexts/filter-context';
 import { useContentData } from '@/contexts/content-data-context';
+import { useBrandAuthContext } from '@/contexts/brand-auth-context';
+import { analyticsAPI } from '@/lib/api';
 import type {
+  AnalyticsOverviewData,
   Mention,
   MentionPlatform,
   MentionStats,
@@ -206,6 +215,25 @@ function PostsByPlatform({ mentions }: { mentions: Mention[] }) {
   );
 }
 
+// ─── Section header ────────────────────────────────────────────────────────────
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+      {children}
+    </h2>
+  );
+}
+
+function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-dk-border dark:bg-dk-surface">
+      <h3 className="mb-3 text-sm font-semibold text-slate-800 dark:text-purple-100">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AnalyticsPage() {
@@ -215,7 +243,16 @@ export default function AnalyticsPage() {
     igSessionId,
   } = useFilters();
   const { mentions: allMentions, loading, reload } = useContentData();
+  const { token } = useBrandAuthContext();
   const [reloading, setReloading] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+
+  // Marketing-expert overview KPIs (computed server-side from the visible posts).
+  const [overview, setOverview] = useState<AnalyticsOverviewData | null>(null);
+  const [audience, setAudience] = useState<{
+    gender: { female: number; male: number; unspecified: number };
+    age: Record<string, number>;
+  } | null>(null);
 
   const handleReload = () => {
     setReloading(true);
@@ -241,6 +278,39 @@ export default function AnalyticsPage() {
       return true;
     });
   }, [allMentions, dateFrom, dateTo, selectedPlatforms, selectedSentiments, selectedEmotions]);
+
+  // Fetch the marketing-expert KPI overview whenever the visible post set changes.
+  useEffect(() => {
+    if (!token || filtered.length === 0) {
+      setOverview(null);
+      return;
+    }
+    let cancelled = false;
+    analyticsAPI
+      .overview(token, filtered as unknown as Record<string, unknown>[])
+      .then(res => {
+        if (!cancelled) setOverview(res.data.data as AnalyticsOverviewData);
+      })
+      .catch(() => { /* silent — KPI tiles hide if missing */ });
+    return () => { cancelled = true; };
+  }, [token, filtered]);
+
+  // Fetch IG audience demographics once per session for the Audience tab.
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    Promise.all([
+      analyticsAPI.audienceGender(token).catch(() => null),
+      analyticsAPI.audienceAge(token).catch(() => null),
+    ]).then(([g, a]) => {
+      if (cancelled) return;
+      setAudience({
+        gender: g?.data.data ?? { female: 0, male: 0, unspecified: 0 },
+        age: a?.data.data ?? {},
+      });
+    });
+    return () => { cancelled = true; };
+  }, [token]);
 
   const igSince = dateFrom ? Math.floor(dateFrom.getTime() / 1000).toString() : undefined;
   const igUntil = dateTo   ? Math.floor(dateTo.getTime()   / 1000).toString() : undefined;
@@ -282,6 +352,8 @@ export default function AnalyticsPage() {
     );
   }
 
+  const top = overview?.top_of_page;
+
   return (
     <div className="flex flex-col h-full">
       <StatsBar stats={stats} />
@@ -300,25 +372,110 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-slate-50 dark:bg-dk-bg">
-        <VolumeReachChart data={volumeData} />
 
-        <InteractionsChart data={interactionsData} />
+        {/* ── Top-of-page KPI tiles (marketing-expert spec) ── */}
+        <section className="space-y-3">
+          <SectionTitle>Headline KPIs · last {Math.max(1, Math.round(((dateTo?.getTime() ?? Date.now()) - (dateFrom?.getTime() ?? Date.now())) / 86400000))} days</SectionTitle>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <PeriodOverPeriodCard
+              label="Followers Growth"
+              value={top?.followers_growth_rate_pct == null ? '—' : top.followers_growth_rate_pct.toFixed(2)}
+              unit={top?.followers_growth_rate_pct == null ? '' : '%'}
+              hideDelta
+            />
+            <PeriodOverPeriodCard
+              label="ER per Reach"
+              value={overview?.engagement_rate_per_reach_pct == null ? '—' : overview.engagement_rate_per_reach_pct.toFixed(2)}
+              unit={overview?.engagement_rate_per_reach_pct == null ? '' : '%'}
+              hideDelta
+            />
+            <PeriodOverPeriodCard
+              label="Interactions / 1k Followers"
+              value={overview?.interactions_per_1k_followers == null ? '—' : overview.interactions_per_1k_followers.toFixed(2)}
+              hideDelta
+            />
+            <PeriodOverPeriodCard
+              label="Avg Reach / Post"
+              value={top?.avg_reach_per_post == null ? '—' : Math.round(top.avg_reach_per_post).toLocaleString()}
+              hideDelta
+            />
+            <PeriodOverPeriodCard
+              label="Avg Saves / Post"
+              value={top?.avg_saves_per_post == null ? '—' : top.avg_saves_per_post.toFixed(1)}
+              hideDelta
+            />
+            <PeriodOverPeriodCard
+              label="Avg Shares / Post"
+              value={top?.avg_shares_per_post == null ? '—' : top.avg_shares_per_post.toFixed(1)}
+              hideDelta
+            />
+          </div>
+        </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <PostFormatChart data={postFormatData} />
-          <FollowersGrowthChart igSessionId={igSessionId} since={igSince} until={igUntil} />
-        </div>
+        {/* ── Tabs ── */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
+          <TabsList className="overflow-x-auto whitespace-nowrap">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="audience">Audience</TabsTrigger>
+            <TabsTrigger value="content">Content</TabsTrigger>
+            <TabsTrigger value="hashtags">Hashtags</TabsTrigger>
+            <TabsTrigger value="grade">Post Grade</TabsTrigger>
+          </TabsList>
 
-        <TrendingConversationsChart data={conversationsData} />
+          <TabsContent value="overview" className="space-y-5">
+            <VolumeReachChart data={volumeData} />
+            <InteractionsChart data={interactionsData} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <PostFormatChart data={postFormatData} />
+              <FollowersGrowthChart igSessionId={igSessionId} since={igSince} until={igUntil} />
+            </div>
+            <SentimentTimelineChart data={sentimentData} />
+            <TrendingConversationsChart data={conversationsData} />
+            <BestTimeHeatmap data={heatmapData} />
+          </TabsContent>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <TopCountriesChart data={undefined} />
-          <PostsByPlatform mentions={filtered} />
-        </div>
+          <TabsContent value="audience" className="space-y-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <ChartCard title="Audience by Gender">
+                <AudienceGenderChart data={audience?.gender ?? { female: 0, male: 0, unspecified: 0 }} />
+              </ChartCard>
+              <ChartCard title="Audience by Age">
+                <AudienceAgeChart data={audience?.age ?? {}} />
+              </ChartCard>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <TopCountriesChart data={undefined} />
+              <PostsByPlatform mentions={filtered} />
+            </div>
+          </TabsContent>
 
-        <BestTimeHeatmap data={heatmapData} />
+          <TabsContent value="content" className="space-y-5">
+            <PostFormatChart data={postFormatData} />
+            <PostsByPlatform mentions={filtered} />
+            <BestTimeHeatmap data={heatmapData} />
+          </TabsContent>
 
-        <TrendingHashtagsChart data={hashtagsData} />
+          <TabsContent value="hashtags" className="space-y-5">
+            <TrendingHashtagsChart data={hashtagsData} />
+            <HashtagPerformanceTable posts={filtered as unknown as { hashtags?: string[]; reach?: number; interactions?: number }[]} />
+          </TabsContent>
+
+          <TabsContent value="grade" className="space-y-5">
+            <ChartCard title="Post Grade Distribution (A+ / A / B / C / D)">
+              {overview ? (
+                <GradeDistributionChart distribution={overview.grade_distribution} />
+              ) : (
+                <div className="flex h-[220px] items-center justify-center text-sm text-slate-500">
+                  Loading…
+                </div>
+              )}
+            </ChartCard>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Grade weighted score = (likes × 1) + (comments × 2) + (shares × 3) + (saves × 5).
+              Quartile rank: top 10% → A+, next 15% → A, next 25% → B, next 25% → C, bottom 25% → D.
+            </p>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

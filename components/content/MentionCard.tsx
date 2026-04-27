@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { ExternalLink, Trash2, Eye, ChevronDown, ChevronUp, BarChart2 } from 'lucide-react';
+import { ExternalLink, Trash2, Eye, ChevronDown, ChevronUp, BarChart2, MessageCircle } from 'lucide-react';
 import type { Mention, MentionPlatform, Sentiment, PostInsights } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { contentFeedAPI } from '@/lib/api';
 import { useBrandAuthContext } from '@/contexts/brand-auth-context';
 import { PostInsightsPanel } from './PostInsightsPanel';
+import { CommentsDrawer } from './CommentsDrawer';
 
 // ─── Platform helpers ─────────────────────────────────────────────────────────
 
@@ -88,6 +89,7 @@ export function MentionCard({ mention, onDelete }: MentionCardProps) {
   const [insights, setInsights] = useState<PostInsights | null>(null);
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
+  const [commentsOpen, setCommentsOpen] = useState(false);
 
   const { token } = useBrandAuthContext();
 
@@ -217,6 +219,17 @@ export function MentionCard({ mention, onDelete }: MentionCardProps) {
                   }
                 </button>
 
+                {mention.platform === 'instagram' && (
+                  <button
+                    onClick={() => setCommentsOpen(true)}
+                    className="flex items-center gap-1 text-xs font-medium text-slate-400 dark:text-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-colors"
+                    aria-label="Open comments drawer"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    Comments
+                  </button>
+                )}
+
                 <a
                   href={mention.url}
                   target="_blank"
@@ -259,6 +272,15 @@ export function MentionCard({ mention, onDelete }: MentionCardProps) {
             <PostInsightsPanel insights={insights} />
           )}
         </>
+      )}
+
+      {/* Comments drawer (Instagram only — backend endpoint is IG-scoped). */}
+      {mention.platform === 'instagram' && (
+        <CommentsDrawer
+          mediaId={mention.id}
+          open={commentsOpen}
+          onClose={() => setCommentsOpen(false)}
+        />
       )}
 
       {/* Delete confirmation dialog */}

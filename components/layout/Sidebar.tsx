@@ -19,6 +19,10 @@ import {
   LogOut,
   Plug,
   Crosshair,
+  Send,
+  Calendar,
+  Image as ImageIcon,
+  CheckCircle2,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { type FacebookPage, UserRole } from '@/lib/types';
@@ -46,6 +50,10 @@ const superNav = [
 const primaryNav = [
   { name: 'Content',              href: '/content',              icon: MessageSquare },
   { name: 'Analytics',            href: '/analytics',            icon: BarChart2     },
+  { name: 'Compose',              href: '/publish/compose',      icon: Send          },
+  { name: 'Calendar',             href: '/publish/calendar',     icon: Calendar      },
+  { name: 'Media library',        href: '/publish/media',        icon: ImageIcon     },
+  { name: 'Approvals',            href: '/publish/approvals',    icon: CheckCircle2  },
   { name: 'Competitor Analysis',  href: '/competitor-analysis',  icon: Crosshair     },
   { name: 'AI Digest',            href: '/ai-digest',            icon: Sparkles,  badge: 'Soon' },
   { name: 'Influencers',          href: '/influencers',          icon: Users,     badge: 'Soon' },
@@ -59,7 +67,7 @@ const brandsNav = { name: 'Brands', href: '/brands', icon: Building2 };
 
 const secondaryNav = [
   { name: 'Connections', href: '/connect',  icon: Plug                     },
-  { name: 'Reports',     href: '/reports',  icon: FileText, badge: 'Soon'  },
+  { name: 'Reports',     href: '/reports',  icon: FileText                 },
   { name: 'Settings',    href: '/settings', icon: Settings                 },
 ];
 

@@ -1183,3 +1183,122 @@ export interface CompetitorEnvelope<T> {
   message?: string;
   error?: string;
 }
+
+// ─── Marketing-expert analytics types (drives the analytics rebuild) ──────
+
+export type PostGrade = 'A+' | 'A' | 'B' | 'C' | 'D';
+
+/** Top-of-page KPI tile row from the marketing-expert spec. */
+export interface TopOfPageKPIs {
+  followers_growth_rate_pct: number | null;
+  avg_total_engagements_per_post: number;
+  avg_likes_per_post: number;
+  avg_reach_per_post: number;
+  avg_saves_per_post: number;
+  avg_shares_per_post: number;
+}
+
+export interface AnalyticsOverviewData {
+  top_of_page: TopOfPageKPIs;
+  engagement_rate_per_reach_pct: number | null;
+  interactions_per_1k_followers: number | null;
+  total_saves: number;
+  grade_distribution: Record<PostGrade, number>;
+  graded_posts: { id: string; platform: string; score: number; grade: PostGrade | null }[];
+}
+
+export interface CampaignTag {
+  id: number;
+  brand_id: number;
+  name: string;
+  slug: string;
+  color: string;
+  description: string | null;
+}
+
+export type DraftStatus =
+  | 'draft' | 'pending_approval' | 'scheduled'
+  | 'publishing' | 'published' | 'failed';
+
+export interface PublishDraft {
+  id: number;
+  brand_id: number;
+  author_user_id: number;
+  status: DraftStatus;
+  scheduled_at: string | null;
+  text: string;
+  platforms_json: string[];
+  per_platform_payload_json: Record<string, Record<string, unknown>>;
+  media_asset_ids_json: number[];
+  campaign_tag_ids_json: number[];
+  approved_at: string | null;
+  rejection_reason: string | null;
+  published_at: string | null;
+  platform_post_ids_json: Record<string, string> | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MediaAssetSummary {
+  id: number;
+  brand_id: number;
+  kind: 'image' | 'video';
+  filename: string;
+  mime: string;
+  size_bytes: number;
+  width: number | null;
+  height: number | null;
+  duration_seconds: number | null;
+  created_at: string;
+}
+
+export interface BrandIdentity {
+  id: number;
+  brand_id: number;
+  primary_color: string;
+  secondary_color: string;
+  font_family: string;
+  white_label_subdomain: string | null;
+  has_logo: boolean;
+}
+
+export interface ReportRunSummary {
+  id: number;
+  brand_id: number;
+  schedule_id: number | null;
+  status: 'pending' | 'generating' | 'ready' | 'failed';
+  period_start: string;
+  period_end: string;
+  generated_at: string | null;
+  delivered_at: string | null;
+  error_message: string | null;
+}
+
+export interface ReportSchedule {
+  id: number;
+  brand_id: number;
+  name: string;
+  cadence: 'weekly' | 'monthly';
+  recipients_csv: string;
+  template_json: Record<string, unknown>;
+  last_sent_at: string | null;
+  next_sent_at: string;
+}
+
+export interface InstagramCommentAnalysis {
+  media_id: string;
+  summary: {
+    total: number;
+    positive: number;
+    neutral: number;
+    negative: number;
+    positive_pct: number;
+    negative_pct: number;
+  };
+  comments: {
+    id: string; text: string; timestamp: string; username: string;
+    like_count: number; sentiment: 'positive' | 'neutral' | 'negative';
+    replies?: { id: string; text: string; sentiment: 'positive' | 'neutral' | 'negative' }[];
+  }[];
+}
